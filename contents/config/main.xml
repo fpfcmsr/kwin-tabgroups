@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+                          http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name=""/>
+  <entry name="PromptOnDrop" type="Bool">
+    <label>Ask before grouping</label>
+    <default>true</default>
+  </entry>
+  <entry name="OverlapThreshold" type="Int">
+    <label>Overlap needed to offer grouping (percent of the dragged window)</label>
+    <default>60</default>
+  </entry>
+  <entry name="DwellTimeMs" type="Int">
+    <label>Time a window must be held over a target (ms)</label>
+    <default>250</default>
+  </entry>
+  <entry name="HideInactive" type="Int">
+    <label>Inactive tabs: 1 = minimize them, 0 = only cover them</label>
+    <default>1</default>
+  </entry>
+  <entry name="RightInset" type="Int">
+    <label>Space reserved at the right end of the tab strip for the window buttons</label>
+    <default>150</default>
+  </entry>
+  <entry name="BarHeight" type="Int">
+    <label>Tab strip height when the window has no server side title bar</label>
+    <default>30</default>
+  </entry>
+  <entry name="DragOutDistance" type="Int">
+    <label>Distance a tab must be dragged out of the strip to detach it</label>
+    <default>48</default>
+  </entry>
+  <entry name="GroupDragOnStrip" type="Bool">
+    <label>Move the whole group by dragging the empty part of the tab strip</label>
+    <default>true</default>
+  </entry>
+  <entry name="RestoreAfterRestart" type="Bool">
+    <label>Rebuild groups after a restart (matches windows by application and title or position)</label>
+    <default>false</default>
+  </entry>
+  <entry name="RestoreWindowMinutes" type="Int">
+    <label>How long a saved group stays restorable (minutes)</label>
+    <default>1440</default>
+  </entry>
+  <entry name="MatchTolerancePx" type="Int">
+    <label>Allowed position difference when matching restored windows (px)</label>
+    <default>40</default>
+  </entry>
+</kcfg>

@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>TabGroupsConfig</class>
+ <widget class="QWidget" name="TabGroupsConfig">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>420</width>
+    <height>220</height>
+   </rect>
+  </property>
+  <layout class="QFormLayout" name="formLayout">
+   <item row="0" column="0" colspan="2">
+    <widget class="QCheckBox" name="kcfg_PromptOnDrop">
+     <property name="text">
+      <string>Ask before grouping</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="2">
+    <widget class="QCheckBox" name="kcfg_GroupDragOnStrip">
+     <property name="text">
+      <string>Move the group by dragging the tab strip</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="overlapLabel">
+     <property name="text">
+      <string>Overlap needed:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QSpinBox" name="kcfg_OverlapThreshold">
+     <property name="suffix">
+      <string> %</string>
+     </property>
+     <property name="minimum">
+      <number>10</number>
+     </property>
+     <property name="maximum">
+      <number>100</number>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="dwellLabel">
+     <property name="text">
+      <string>Hold time:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="QSpinBox" name="kcfg_DwellTimeMs">
+     <property name="suffix">
+      <string> ms</string>
+     </property>
+     <property name="minimum">
+      <number>0</number>
+     </property>
+     <property name="maximum">
+      <number>2000</number>
+     </property>
+     <property name="singleStep">
+      <number>50</number>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="hideLabel">
+     <property name="text">
+      <string>Inactive tabs:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1">
+    <widget class="QComboBox" name="kcfg_HideInactive">
+     <item>
+      <property name="text">
+       <string>Minimize</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Cover only</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLabel" name="insetLabel">
+     <property name="text">
+      <string>Space for window buttons:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1">
+    <widget class="QSpinBox" name="kcfg_RightInset">
+     <property name="suffix">
+      <string> px</string>
+     </property>
+     <property name="minimum">
+      <number>0</number>
+     </property>
+     <property name="maximum">
+      <number>600</number>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0">
+    <widget class="QLabel" name="barHeightLabel">
+     <property name="text">
+      <string>Strip height without title bar:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1">
+    <widget class="QSpinBox" name="kcfg_BarHeight">
+     <property name="suffix">
+      <string> px</string>
+     </property>
+     <property name="minimum">
+      <number>16</number>
+     </property>
+     <property name="maximum">
+      <number>80</number>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0">
+    <widget class="QLabel" name="dragOutLabel">
+     <property name="text">
+      <string>Distance to detach a tab:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="0" colspan="2">
+    <widget class="QCheckBox" name="kcfg_RestoreAfterRestart">
+     <property name="text">
+      <string>Rebuild groups after a restart (best effort)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="0">
+    <widget class="QLabel" name="restoreWindowLabel">
+     <property name="text">
+      <string>Keep saved groups for:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="1">
+    <widget class="QSpinBox" name="kcfg_RestoreWindowMinutes">
+     <property name="suffix">
+      <string> min</string>
+     </property>
+     <property name="minimum">
+      <number>1</number>
+     </property>
+     <property name="maximum">
+      <number>10080</number>
+     </property>
+     <property name="singleStep">
+      <number>60</number>
+     </property>
+    </widget>
+   </item>
+   <item row="10" column="0">
+    <widget class="QLabel" name="toleranceLabel">
+     <property name="text">
+      <string>Match tolerance:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="10" column="1">
+    <widget class="QSpinBox" name="kcfg_MatchTolerancePx">
+     <property name="suffix">
+      <string> px</string>
+     </property>
+     <property name="minimum">
+      <number>0</number>
+     </property>
+     <property name="maximum">
+      <number>500</number>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="1">
+    <widget class="QSpinBox" name="kcfg_DragOutDistance">
+     <property name="suffix">
+      <string> px</string>
+     </property>
+     <property name="minimum">
+      <number>8</number>
+     </property>
+     <property name="maximum">
+      <number>400</number>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

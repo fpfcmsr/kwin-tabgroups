@@ -1,0 +1,19 @@
+{
+    "KPackageStructure": "KWin/Script",
+    "KPlugin": {
+        "Id": "tabgroups",
+        "Name": "Tab Groups",
+        "Description": "Real tab groups (stacked windows): drop one window onto another to group them, switch with a titlebar tab strip.",
+        "Version": "0.1.0",
+        "License": "GPL-2.0-or-later",
+        "Authors": [
+            {
+                "Name": "fpfcmsr"
+            }
+        ],
+        "Icon": "preferences-system-windows-script-test",
+        "EnabledByDefault": true
+    },
+    "X-Plasma-API": "declarativescript",
+    "X-KWin-Version": "6.5"
+}
