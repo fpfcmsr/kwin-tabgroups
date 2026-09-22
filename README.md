@@ -8,3 +8,7 @@ Very hacky tab groups for KDE Plasma
 
 Works for me, but it comes with absolutely no warranty if it bricks your Plasma session. 
 
+
+How to install:
+clone the repo then run install.sh 
+to update: git pull -> then run ./dev/reload.sh
