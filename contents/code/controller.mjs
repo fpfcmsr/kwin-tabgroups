@@ -371,6 +371,8 @@ export function connectWindow(window) {
         geometry: function () { onFrameGeometryChanged(window); },
         minimized: function () { onMinimizedChanged(window); },
         maximized: function () { onMaximizedChanged(window); },
+        attention: function () { refreshMember(window); },
+        caption: function () { refreshMember(window); },
         fullscreen: function () { refresh(); },
         closed: function () { onWindowClosed(window); }
     };
@@ -380,6 +382,8 @@ export function connectWindow(window) {
     window.frameGeometryChanged.connect(handlers.geometry);
     window.minimizedChanged.connect(handlers.minimized);
     window.maximizedChanged.connect(handlers.maximized);
+    window.demandsAttentionChanged.connect(handlers.attention);
+    window.captionChanged.connect(handlers.caption);
     window.fullScreenChanged.connect(handlers.fullscreen);
     window.closed.connect(handlers.closed);
     hooks.push({ window: window, handlers: handlers });
@@ -392,6 +396,8 @@ export function disconnect(hook) {
     hook.window.frameGeometryChanged.disconnect(hook.handlers.geometry);
     hook.window.minimizedChanged.disconnect(hook.handlers.minimized);
     hook.window.maximizedChanged.disconnect(hook.handlers.maximized);
+    hook.window.demandsAttentionChanged.disconnect(hook.handlers.attention);
+    hook.window.captionChanged.disconnect(hook.handlers.caption);
     hook.window.fullScreenChanged.disconnect(hook.handlers.fullscreen);
     hook.window.closed.disconnect(hook.handlers.closed);
 }
@@ -446,16 +452,44 @@ export function onWindowClosed(window) {
         // closing one tab never takes the remaining window with it.
         dissolveGroup(group, true);
     } else {
-        if (wasActive) {
+        if (wasActive && !group.collapsed) {
             activate(group, Model.activeMember(group).window);
+        } else {
+            // A collapsed group stays collapsed: closing a tab must not bring the
+            // remaining ones back on screen.
+            applyGroup(group);
         }
-        applyGroup(group);
     }
     refresh();
 }
 
 export function onWindowActivated() {
+    if (suppress) {
+        return;   // a consequence of our own state changes, the caller refreshes
+    }
+    adoptActiveWindow();
     refresh();
+}
+
+// The strip shows the tabs of a group and nothing else, so a title or attention
+// change of a window that is not in one has nothing to update.
+function refreshMember(window) {
+    if (Model.contains(store, window)) {
+        refresh();
+    }
+}
+
+// KWin is the authority on which window has the focus. When it activates another
+// tab of a group - a task bar entry, the window switcher, the application itself -
+// that tab becomes the visible one, instead of the session and the group ending up
+// disagreeing about which window is on screen.
+function adoptActiveWindow() {
+    var window = ws.activeWindow;
+    var group = window ? Model.groupForWindow(store, window) : null;
+    var member = group ? Model.memberFor(group, window) : null;
+    if (member && (Model.activeMember(group) !== member || group.collapsed)) {
+        activate(group, window);
+    }
 }
 
 // ------------------------------------------------------------------ grouping
@@ -638,10 +672,11 @@ export function detachFromGroup(group, window, restoreGeometry) {
         dissolveGroup(group, true);
         return;
     }
-    if (wasActive) {
+    if (wasActive && !group.collapsed) {
         activate(group, Model.activeMember(group).window);
+    } else {
+        applyGroup(group);
     }
-    applyGroup(group);
 }
 
 export function switchTo(index) {
@@ -680,19 +715,21 @@ export function moveGroupBy(dx, dy) {
     refresh();
 }
 
-// Makes `window` the visible tab of its group.
+// Makes `window` the visible tab of its group. The tab that is brought forward
+// takes the focus before the tab that was shown before it is hidden: minimizing
+// the focused window makes KWin activate some other window, which is what the task
+// manager then reports as the active task.
 export function activate(group, window) {
+    var member = Model.memberFor(group, window);
+    if (!member) {
+        return;
+    }
+    group.collapsed = false;
     Model.setActive(group, window);
-    applyGroup(group);
-    // Minimizing the previous tab can hand focus to another window, so the
-    // activation is re-asserted once the state changes have settled.
-    schedule(30, function () {
-        if (!Model.contains(store, window)) {
-            return;
-        }
-        ws.raiseWindow(window);
-        ws.activeWindow = window;
-    });
+    showMember(group, member);
+    requestFocus(window);
+    hideMembers(group, window);
+    ensureFocus(window);
 }
 
 // ------------------------------------------------------------------ application
@@ -704,23 +741,82 @@ export function applyActiveGroup() {
     }
 }
 
+// Makes the windows match the model: the visible tab first, so that hiding the
+// others cannot take the focus away from it, then everyone else.
 export function applyGroup(group) {
-    if (!group) {
-        return;
-    }
-    var active = Model.activeMember(group);
+    var active = group ? Model.activeMember(group) : null;
     if (!active) {
         return;
     }
+    showMember(group, active);
+    if (!group.collapsed) {
+        // A rebuilt group can have the focus on a tab other than its own visible
+        // one; hiding that tab would bounce the focus onto an unrelated window.
+        focusVisibleTab(group, active);
+    }
+    hideMembers(group, active.window);
+}
+
+// Geometry plus the state of the tab that is on screen.
+function showMember(group, member) {
+    suppress = true;
+    setGeometry(member.window, group.geometry);
+    applyState(member.window, memberState(group, member, true));
+    suppress = false;
+}
+
+// Geometry plus the hidden state of every other tab.
+function hideMembers(group, activeWindow) {
     suppress = true;
     for (var i = 0; i < group.members.length; ++i) {
         var member = group.members[i];
-        var isActive = member.window === active.window;
+        if (member.window === activeWindow) {
+            continue;
+        }
         setGeometry(member.window, group.geometry);
-        var state = Policy.desiredState(member, isActive, config.hideInactive);
-        applyState(member.window, state);
+        applyState(member.window, memberState(group, member, false));
     }
     suppress = false;
+}
+
+function memberState(group, member, isActive) {
+    return Policy.desiredState(member, isActive, config.hideInactive, group.collapsed);
+}
+
+function focusVisibleTab(group, active) {
+    var focused = ws.activeWindow;
+    if (!focused || focused === active.window) {
+        return;
+    }
+    if (!Model.memberFor(group, focused)) {
+        return;   // the focus is elsewhere, the group can wait
+    }
+    requestFocus(active.window);
+}
+
+// Activation is a request: KWin can turn it down (blocked focus changes, a window
+// that cannot take input), so it is never assumed to have happened.
+function requestFocus(window) {
+    if (!window || window.deleted || ws.activeWindow === window) {
+        return;
+    }
+    ws.raiseWindow(window);
+    ws.activeWindow = window;
+}
+
+// KWin activates another window as soon as the focused one is minimized, so a
+// switch that did not take is repeated once the state changes have settled.
+function ensureFocus(window) {
+    if (ws.activeWindow === window) {
+        return;
+    }
+    schedule(60, function () {
+        if (shuttingDown || ws.activeWindow === window || !Model.contains(store, window)) {
+            return;
+        }
+        requestFocus(window);
+        refresh();
+    });
 }
 
 export function applyState(window, state) {
@@ -791,21 +887,39 @@ export function onMinimizedChanged(window) {
         return;
     }
     var group = Model.groupForWindow(store, window);
-    if (!group) {
+    var member = group ? Model.memberFor(group, window) : null;
+    if (!member) {
         return;
     }
-    var active = Model.activeMember(group);
-    if (!active || active.window !== window) {
+    if (Model.activeMember(group) === member) {
+        // The user minimized or restored the visible tab: the group follows it as
+        // one unit, and keeps following while it is collapsed.
+        group.collapsed = !!window.minimized;
+        applyGroup(group);
+        refresh();
         return;
     }
-    // The user minimized the visible tab: the whole group follows.
-    suppress = true;
-    for (var i = 0; i < group.members.length; ++i) {
-        if (group.members[i].window.minimized !== window.minimized) {
-            group.members[i].window.minimized = window.minimized;
+    if (window.minimized) {
+        return;   // an inactive tab was minimized behind the group
+    }
+    // An inactive tab that becomes visible on its own is either the beginning of an
+    // activation - KWin shows a window before it moves the focus - or a window that
+    // was restored behind the group. Give KWin its moment, then put it back.
+    schedule(60, function () {
+        var current = Model.groupForWindow(store, window);
+        var currentMember = current ? Model.memberFor(current, window) : null;
+        if (shuttingDown || !currentMember || current.collapsed) {
+            return;
         }
-    }
-    suppress = false;
+        if (Model.activeMember(current) === currentMember || ws.activeWindow === window) {
+            return;   // it is the visible tab now
+        }
+        if (!memberState(current, currentMember, false).minimized) {
+            return;   // cover mode keeps the tab mapped
+        }
+        applyGroup(current);
+        refresh();
+    });
 }
 
 export function onMaximizedChanged(window) {
@@ -1041,7 +1155,8 @@ export function tabsFor(group) {
         var window = group.members[i].window;
         tabs.push({
             title: window.caption,
-            active: !!active && window === active.window
+            active: !!active && window === active.window,
+            attention: !!window.demandsAttention
         });
     }
     return tabs;

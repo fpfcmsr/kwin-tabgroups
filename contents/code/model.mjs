@@ -1,14 +1,16 @@
 // Bookkeeping for tab groups. Deliberately free of KWin calls so the grouping
 // rules can be exercised on their own.
 //
-// A group is { id, geometry, members, activeIndex }.
+// A group is { id, geometry, members, activeIndex, collapsed }.
 // A member is { window, restore, flags } where `restore` is the frame geometry the
 // window had before it joined and `flags` remembers the task bar / switcher state.
+// `collapsed` means the user minimized the visible tab: the whole group follows it.
+// It is not part of the saved state, a restored group comes back on screen.
 
 export // Windows are compared by their identity id, not by object identity: the QML
 // engine may hand out different wrappers for the same window.
 function keyOf(window) {
-    return String(window.internalId);
+    return window ? String(window.internalId) : "";
 }
 
 export function createStore() {
@@ -57,7 +59,8 @@ export function createGroup(store, member, geometry) {
         id: store.nextId++,
         geometry: geometry,
         members: [member],
-        activeIndex: 0
+        activeIndex: 0,
+        collapsed: false
     };
     store.groups.push(group);
     return group;

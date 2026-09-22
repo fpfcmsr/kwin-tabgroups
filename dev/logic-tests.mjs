@@ -74,14 +74,18 @@ check("dissolved group has no members", group.members.length, 0);
 const plain = { window: {}, restore: null, flags: { skipTaskbar: false, skipSwitcher: false } };
 const alreadyHidden = { window: {}, restore: null, flags: { skipTaskbar: true, skipSwitcher: false } };
 check("the visible tab keeps its own task bar state",
-    Policy.desiredState(alreadyHidden, true, Policy.HIDE_MINIMIZE),
+    Policy.desiredState(alreadyHidden, true, Policy.HIDE_MINIMIZE, false),
     { minimized: false, skipTaskbar: true, skipSwitcher: false });
-check("hidden tabs are minimized and unlisted",
-    Policy.desiredState(plain, false, Policy.HIDE_MINIMIZE),
-    { minimized: true, skipTaskbar: true, skipSwitcher: true });
-check("cover mode leaves the window mapped but unlisted",
-    Policy.desiredState(plain, false, Policy.HIDE_COVER),
-    { minimized: false, skipTaskbar: true, skipSwitcher: true });
+check("hidden tabs are minimized and out of the switcher",
+    Policy.desiredState(plain, false, Policy.HIDE_MINIMIZE, false),
+    { minimized: true, skipTaskbar: false, skipSwitcher: true });
+check("cover mode leaves the window mapped",
+    Policy.desiredState(plain, false, Policy.HIDE_COVER, false),
+    { minimized: false, skipTaskbar: false, skipSwitcher: true });
+check("a collapsed group minimizes the visible tab too",
+    Policy.desiredState(plain, true, Policy.HIDE_MINIMIZE, true),
+    { minimized: true, skipTaskbar: false, skipSwitcher: false });
+check("hidden tabs stay in the task bar", Policy.desiredState(plain, false, Policy.HIDE_MINIMIZE, false).skipTaskbar, false);
 
 const config = { barHeight: 30, rightInset: 150 };
 const barGroup = { geometry: rect(200, 300, 1000, 700), members: [plain], activeIndex: 0 };
@@ -92,6 +96,7 @@ check("the strip falls back to the configured height",
     Policy.barRect(barGroup, windowLike(200, 300, 1000, 700, 200, 300, 1000, 700), config),
     { x: 200, y: 300, width: 850, height: 30 });
 check("no strip for a single window", Policy.barVisible({ members: [plain] }), false);
+check("no strip for a collapsed group", Policy.barVisible({ members: [plain, plain], collapsed: true }), false);
 
 // --- drop detection
 const dragConfig = { overlap: 0.6, dwell: 250 };

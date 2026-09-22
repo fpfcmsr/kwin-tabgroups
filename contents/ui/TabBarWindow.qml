@@ -131,7 +131,9 @@ QW.Window {
                     radius: 4
                     color: tabItem.modelData.active
                            ? Qt.rgba(0.24, 0.68, 0.91, 0.92)
-                           : (tabMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent")
+                           : (tabItem.modelData.attention
+                              ? Qt.rgba(0.93, 0.55, 0.11, 0.85)
+                              : (tabMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"))
 
                     Text {
                         id: tabLabel

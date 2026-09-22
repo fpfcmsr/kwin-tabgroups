@@ -6,19 +6,22 @@ import * as Util from "./util.mjs";
 export var HIDE_COVER = 0;
 export var HIDE_MINIMIZE = 1;
 
-// Only the active tab is a regular window: the others are hidden from the task bar
-// and the window switcher so that a group behaves like a single window.
-export function desiredState(member, isActive, hideMode) {
+// Only the active tab is a regular window: the others are hidden from the window
+// switcher and either minimized or merely covered by the active tab. Windows keep
+// their own task bar state in every case: the task manager lists each tab, so that
+// an application is never reported as not running while one of its windows is a
+// hidden tab, and a tab can be brought forward by clicking its task bar entry.
+export function desiredState(member, isActive, hideMode, collapsed) {
     if (isActive) {
         return {
-            minimized: false,
+            minimized: !!collapsed,
             skipTaskbar: member.flags.skipTaskbar,
             skipSwitcher: member.flags.skipSwitcher
         };
     }
     return {
-        minimized: hideMode === HIDE_MINIMIZE,
-        skipTaskbar: true,
+        minimized: !!collapsed || hideMode === HIDE_MINIMIZE,
+        skipTaskbar: member.flags.skipTaskbar,
         skipSwitcher: true
     };
 }
@@ -33,6 +36,8 @@ export function barRect(group, activeWindow, config) {
     return Util.rect(Math.round(geometry.x), Math.round(geometry.y), width, Math.round(height));
 }
 
+// The strip belongs to a group that is on screen: a collapsed group has every tab
+// minimized, so there is nothing to switch between.
 export function barVisible(group) {
-    return !!group && group.members.length > 1;
+    return !!group && group.members.length > 1 && !group.collapsed;
 }
