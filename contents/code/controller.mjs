@@ -438,13 +438,15 @@ export function onWindowClosed(window) {
         refresh();
         return;
     }
-    var wasActive = Model.activeMember(group) === Model.memberFor(group, window);
     var member = Model.memberFor(group, window);
-    Model.removeMember(store, group, window);
+    var wasActive = !!member && Model.activeMember(group) === member;
+    Model.removeMember(group, window);
     if (group.members.length < 2) {
+        // The last tab of the group: dissolving restores its window, so that
+        // closing one tab never takes the remaining window with it.
         dissolveGroup(group, true);
     } else {
-        if (wasActive && member) {
+        if (wasActive) {
             activate(group, Model.activeMember(group).window);
         }
         applyGroup(group);
@@ -582,8 +584,7 @@ function leaveEveryGroup(window) {
         var group = store.groups[i];
         for (var j = group.members.length - 1; j >= 0; --j) {
             if (String(group.members[j].window.internalId) === key) {
-                var member = group.members[j];
-                Model.removeMember(store, group, window);
+                Model.removeMember(group, window);
                 if (group.members.length < 2) {
                     dissolveGroup(group, false);
                 } else {
@@ -630,7 +631,7 @@ export function detachFromGroup(group, window, restoreGeometry) {
         return;
     }
     var wasActive = Model.activeMember(group) === member;
-    Model.removeMember(store, group, window);
+    Model.removeMember(group, window);
     restoreMember(member, restoreGeometry);
 
     if (group.members.length < 2) {

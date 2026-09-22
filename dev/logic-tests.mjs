@@ -57,14 +57,17 @@ check("a window finds its group", Model.groupForWindow(store, b) === group, true
 
 Model.setActive(group, b);
 check("the active tab follows setActive", Model.activeMember(group).window, b);
-check("removing a member returns it", Model.removeMember(store, group, a).window, a);
+check("removing a member returns it", Model.removeMember(group, a).window, a);
 check("the active tab survives a removal before it", Model.activeMember(group).window, b);
 Model.setActive(group, c);
 Model.reorder(group, 1, 0);
 check("reordering keeps the active tab", Model.activeMember(group).window, c);
 check("reordering changes the order", group.members.map((m) => m.window.name), ["c", "b"]);
-Model.removeMember(store, group, b);
-check("a group with one window dissolves", store.groups.length, 0);
+Model.removeMember(group, b);
+check("a group with one window keeps its last member", group.members.map((m) => m.window.name), ["c"]);
+check("the group stays in the store for the caller", store.groups.length, 1);
+Model.dissolve(store, group);
+check("dissolving drops the group", store.groups.length, 0);
 check("dissolved group has no members", group.members.length, 0);
 
 // --- presentation policy

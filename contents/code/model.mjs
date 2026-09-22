@@ -72,7 +72,10 @@ export function addMember(group, member, geometry) {
 }
 
 // Removes the window from the group and returns the removed member, or null.
-export function removeMember(store, group, window) {
+// Only the membership changes: a group that drops below two members is left for
+// the caller to dissolve, because the remaining member's window still has to be
+// turned back into a regular window before the group can go away.
+export function removeMember(group, window) {
     var index = memberIndex(group, window);
     if (index < 0) {
         return null;
@@ -83,9 +86,6 @@ export function removeMember(store, group, window) {
         group.activeIndex -= 1;
     }
     group.activeIndex = Math.min(Math.max(group.activeIndex, 0), Math.max(group.members.length - 1, 0));
-    if (group.members.length < 2) {
-        dissolve(store, group);
-    }
     return member;
 }
 
