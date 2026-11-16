@@ -6,7 +6,8 @@ Very hacky tab groups for KDE Plasma
 - Tested with plasma 6.7 and 6.8 currently
 
 
-Works for me, but it comes with absolutely no warranty if it bricks your Plasma session. 
+Works for me, but it comes with absolutely no warranty if it bricks your Plasma session.   
+Not compatible with Kwin scripts that modify similar behavior. 
 
 
 How to install:  
