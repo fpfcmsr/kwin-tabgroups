@@ -996,7 +996,8 @@ export function onInteractiveStarted(window) {
 }
 
 export function onInteractiveStepped(window, geometry) {
-    if (drag.dragging !== window) {
+    // A resize is never a drop: only moving a window onto another one groups them.
+    if (drag.dragging !== window || window.resize === true) {
         return;
     }
     var rect = Util.rect(Math.round(geometry.x), Math.round(geometry.y),

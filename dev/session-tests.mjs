@@ -394,6 +394,30 @@ coverA.caption = "editor: Downloads";
 coverB.caption = "files: Home";
 check("the strip follows a window title that changes on its own", strip().tabs, ["editor: Downloads", "files: Home"]);
 
+// --- resizing a window over another one never groups them ----------------------
+// No hold time, so that two steps of a drag are enough to arm a drop target.
+Controller.reloadConfig(Object.assign({}, config, { dwell: 0 }));
+const dragOnto = (window, geometry, resizing) => {
+    window.resize = resizing;
+    window.interactiveMoveResizeStarted.emit();
+    for (let step = 0; step < 2; ++step) {
+        window.frameGeometry = geometry;
+        window.interactiveMoveResizeStepped.emit(geometry);
+    }
+    window.interactiveMoveResizeFinished.emit();
+};
+const dropTarget = new FakeWindow("terminal", rect(3000, 0, 400, 300));
+const dropResized = new FakeWindow("notes", rect(3500, 0, 400, 300));
+const dropMoved = new FakeWindow("music", rect(3500, 400, 400, 300));
+open(dropTarget, dropResized, dropMoved);
+dragOnto(dropResized, rect(3000, 0, 400, 300), true);
+focus(dropResized);
+check("resizing a window over another one does not group them", strip().visible, false);
+dropResized.frameGeometry = rect(3500, 0, 400, 300);
+dragOnto(dropMoved, rect(3000, 0, 400, 300), false);
+focus(dropMoved);
+check("moving a window onto another one groups them", strip(), { visible: true, tabs: ["terminal", "music"] });
+
 const failures = results.filter((result) => !result.ok);
 for (const result of results) {
     console.log(result.line);
