@@ -102,7 +102,7 @@ check("no strip for a collapsed group", Policy.barVisible({ members: [plain, pla
 const dragConfig = { overlap: 0.6, dwell: 250 };
 const state = Drag.makeState();
 const candidates = [{ window: a, geometry: rect(10, 10, 100, 100) }];
-Drag.begin(state, c, rect(0, 0, 100, 100));
+Drag.begin(state, c);
 check("no target while the windows barely overlap",
     Drag.update(state, rect(0, 0, 100, 100), 1000, [{ window: b, geometry: rect(400, 400, 50, 50) }], dragConfig),
     null);
@@ -114,7 +114,7 @@ check("the target arms after the hold time",
 check("leaving the target disarms it",
     Drag.update(state, rect(2000, 2000, 100, 100), 1500, candidates, dragConfig), null);
 check("state after leaving", [state.armed, state.candidate], [false, null]);
-Drag.begin(state, c, rect(0, 0, 100, 100));
+Drag.begin(state, c);
 Drag.update(state, rect(0, 0, 100, 100), 2000, candidates, dragConfig);
 check("the hold time restarts for a new target",
     Drag.update(state, rect(0, 0, 100, 100), 2100, candidates, dragConfig), null);

@@ -6,16 +6,14 @@ import * as Util from "./util.mjs";
 export function makeState() {
     return {
         dragging: null,
-        geometry: null,
         candidate: null,      // { window, geometry }
         candidateSince: 0,
         armed: false
     };
 }
 
-export function begin(state, window, geometry) {
+export function begin(state, window) {
     state.dragging = window;
-    state.geometry = geometry;
     state.candidate = null;
     state.candidateSince = 0;
     state.armed = false;
@@ -23,7 +21,6 @@ export function begin(state, window, geometry) {
 
 export function reset(state) {
     state.dragging = null;
-    state.geometry = null;
     state.candidate = null;
     state.candidateSince = 0;
     state.armed = false;
@@ -46,8 +43,6 @@ export function bestCandidate(geometry, candidates) {
 // Feeds a new geometry for the dragged window. Returns the armed target, or null
 // while the window is still being moved around.
 export function update(state, geometry, now, candidates, config) {
-    state.geometry = geometry;
-
     var best = bestCandidate(geometry, candidates);
     if (!best.candidate || best.ratio < config.overlap) {
         state.candidate = null;

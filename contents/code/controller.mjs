@@ -27,7 +27,7 @@ var overlayWindow = null;
 var originalFlags = {};     // window identity -> the task bar state the window came with
 var settings = null;         // QML Settings object used for both records
 var restoreRecord = null;   // parsed "how to rebuild these groups later" record
-var pendingRestore = null;  // { savedAt, entries } still waiting for their windows
+var pendingRestore = null;  // { items: [{ entry, group }] } still waiting for their windows
 
 // ------------------------------------------------------------------ lifecycle
 
@@ -269,7 +269,7 @@ function startPendingRestore() {
     if (pending.length === 0) {
         return;
     }
-    pendingRestore = { savedAt: Date.now(), items: pending };
+    pendingRestore = { items: pending };
     resolvePendingRestore();
 }
 
@@ -832,7 +832,7 @@ export function moveGroupBy(dx, dy) {
     }
     if (!stripDragging) {
         stripDragging = true;
-        Drag.begin(drag, active.window, group.geometry);
+        Drag.begin(drag, active.window);
     }
     moving = group;
     group.geometry = Util.translated(group.geometry, dx, dy);
@@ -956,7 +956,7 @@ function ensureFocus(window) {
         return;
     }
     schedule(60, function () {
-        if (shuttingDown || ws.activeWindow === window || !Model.contains(store, window)) {
+        if (ws.activeWindow === window || !Model.contains(store, window)) {
             return;
         }
         requestFocus(window);
@@ -1059,7 +1059,7 @@ export function onMinimizedChanged(window) {
     schedule(60, function () {
         var current = Model.groupForWindow(store, window);
         var currentMember = current ? Model.memberFor(current, window) : null;
-        if (shuttingDown || !currentMember || current.collapsed) {
+        if (!currentMember || current.collapsed) {
             return;
         }
         if (Model.activeMember(current) === currentMember || ws.activeWindow === window) {
@@ -1102,7 +1102,7 @@ export function onMaximizedChanged(window) {
         group.geometry = Util.geometryOf(current.window);
         applyGroup(group);
         refresh();
-        });
+    });
 }
 
 // ------------------------------------------------------------------ mouse drags
@@ -1115,7 +1115,7 @@ export function onInteractiveStarted(window) {
     var group = Model.groupForWindow(store, window);
     var active = group ? Model.activeMember(group) : null;
     moving = active && active.window === window ? group : null;
-    Drag.begin(drag, window, Util.geometryOf(window));
+    Drag.begin(drag, window);
 }
 
 export function onInteractiveStepped(window, geometry) {
@@ -1126,10 +1126,8 @@ export function onInteractiveStepped(window, geometry) {
     var rect = Util.rect(Math.round(geometry.x), Math.round(geometry.y),
                          Math.round(geometry.width), Math.round(geometry.height));
     var target = Drag.update(drag, rect, Date.now(), dropCandidates(window), config);
-    if (!target && !drag.candidate) {
-        refresh();
-    } else if (target) {
-        refresh();
+    if (target || !drag.candidate) {
+        refresh();   // the hint appears once armed and goes away with the target
     }
 }
 
@@ -1227,9 +1225,7 @@ function positionOverlay(rect) {
     if (current.x === Math.round(rect.x) && current.y === Math.round(rect.y)) {
         return;
     }
-    suppress = true;
     overlayWindow.frameGeometry = Util.toQtRect(Util.rect(rect.x, rect.y, current.width, current.height));
-    suppress = false;
 }
 
 export function overlayShown() {
@@ -1243,14 +1239,9 @@ export function overlayShown() {
 // ------------------------------------------------------------------ view model
 
 export function setView(view) {
-    if (shuttingDown) {
-        return;   // the strip may already be gone while the script is unloaded
+    if (!shuttingDown) {
+        ui.setView(view);   // the strip may already be gone while the script is unloaded
     }
-    if (ui && typeof ui.setView === "function") {
-        ui.setView(view);
-        return;
-    }
-    throw new Error("tabgroups: cannot push view, ui=" + String(ui));
 }
 
 export function refresh() {

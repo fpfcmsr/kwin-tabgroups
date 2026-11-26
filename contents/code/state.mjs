@@ -121,16 +121,11 @@ export function sessionPlan(saved, windowById) {
             plan.push({
                 geometry: entry.geometry,
                 activeIndex: entry.activeIndex || 0,
-                members: members,
-                missing: entry.members.length - members.length
+                members: members
             });
         }
     }
     return plan;
-}
-
-function withinTolerance(a, b, tolerance) {
-    return Util.withinTolerance(a, b, tolerance);
 }
 
 // A window matches a saved member when it is the same application and either
@@ -151,7 +146,7 @@ export function matchMember(slot, windows, taken, tolerance) {
         if (slot.caption && window.caption === slot.caption) {
             score += 2;
         }
-        if (slot.geometry && withinTolerance(Util.geometryOf(window), slot.geometry, tolerance)) {
+        if (slot.geometry && Util.withinTolerance(Util.geometryOf(window), slot.geometry, tolerance)) {
             score += 1;
         }
         if (score > bestScore) {
