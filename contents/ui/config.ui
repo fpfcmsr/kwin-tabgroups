@@ -59,12 +59,12 @@
     <widget class="QComboBox" name="kcfg_HideInactive">
      <item>
       <property name="text">
-       <string>Minimize</string>
+       <string>Cover only</string>
       </property>
      </item>
      <item>
       <property name="text">
-       <string>Cover only</string>
+       <string>Minimize</string>
       </property>
      </item>
     </widget>
