@@ -455,6 +455,29 @@ focus(stripB);
 check("releasing the strip over a window makes one larger group", strip(),
     { visible: true, tabs: ["photos", "editor", "files"] });
 
+// --- menus and popups over the strip --------------------------------------------
+// The strip is kept above every window, so it steps aside while a menu, popup or
+// notification overlaps it, and comes back once that is gone.
+const popup = (role, geometry, kind) => {
+    const window = new FakeWindow(role, geometry);
+    window.normalWindow = false;
+    window[kind] = true;
+    return window;
+};
+const shownBefore = workspace.activeWindow;
+const panelMenu = popup("panel menu", rect(8650, 10, 200, 100), "popupWindow");
+open(panelMenu);
+check("a menu over the strip hides it", strip().visible, false);
+close(panelMenu, shownBefore);
+check("the strip comes back when the menu closes", strip().visible, true);
+const farNote = popup("notification", rect(100, 900, 300, 80), "notification");
+open(farNote);
+check("a popup elsewhere leaves the strip alone", strip().visible, true);
+farNote.frameGeometry = rect(8700, 0, 300, 80);
+check("a popup that moves over the strip hides it", strip().visible, false);
+close(farNote, shownBefore);
+check("and the strip is back once it is gone", strip().visible, true);
+
 const failures = results.filter((result) => !result.ok);
 for (const result of results) {
     console.log(result.line);

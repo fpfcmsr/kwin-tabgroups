@@ -17,6 +17,7 @@ var hooks = [];           // { window, handlers }
 var drag = Drag.makeState();
 var moving = null;        // group whose visible tab is being moved or resized
 var stripDragging = false; // the group in `moving` is dragged by its tab strip
+var covers = [];          // open menus, popups, notifications and OSDs (see isCover)
 var prompt = null;       // { target, dragged } while the user is asked
 var suppress = false;     // true while the script itself changes window state
 var scheduler = null;     // function (delay, callback), provided by the QML side
@@ -70,6 +71,7 @@ export function init(api) {
     var list = allWindows();
     for (var i = 0; i < list.length; ++i) {
         registerWindow(list[i]);
+        trackCover(list[i]);
     }
     repairLeftovers();
     restoreSession();
@@ -105,6 +107,9 @@ export function shutdown() {
     }
     hooks = [];
     registry = [];
+    while (covers.length > 0) {
+        untrackCover(covers[0]);
+    }
     store = Model.createStore();
     setView({ visible: false, geometry: null, tabs: [], hint: "", prompt: null });
 }
@@ -428,6 +433,9 @@ export function unregisterWindow(window) {
 
 export function onWindowAdded(window) {
     registerWindow(window);
+    if (trackCover(window)) {
+        refresh();
+    }
     resolveOverlay();
     if (pendingRestore) {
         resolvePendingRestore();
@@ -436,7 +444,50 @@ export function onWindowAdded(window) {
 
 export function onWindowRemoved(window) {
     unregisterWindow(window);
+    untrackCover(window);
     refresh();
+}
+
+// ------------------------------------------------------------------ menus and popups
+
+// The strip is kept above every other window, so it would cover a panel menu, a
+// popup or a notification that opens over the title bar of a group. It steps
+// aside while one of these overlaps it.
+export function isCover(window) {
+    if (!window || window.deleted || window.caption === overlayCaption) {
+        return false;
+    }
+    return !!(window.popupWindow || window.appletPopup || window.popupMenu || window.dropdownMenu
+              || window.menu || window.comboBox || window.tooltip || window.notification
+              || window.criticalNotification || window.onScreenDisplay);
+}
+
+function trackCover(window) {
+    if (!isCover(window) || covers.indexOf(window) >= 0) {
+        return false;
+    }
+    covers.push(window);
+    window.frameGeometryChanged.connect(refresh);   // a popup can be placed after it appears
+    return true;
+}
+
+function untrackCover(window) {
+    var index = covers.indexOf(window);
+    if (index < 0) {
+        return;
+    }
+    covers.splice(index, 1);
+    window.frameGeometryChanged.disconnect(refresh);
+}
+
+function coveredBy(rect) {
+    for (var i = 0; i < covers.length; ++i) {
+        var window = covers[i];
+        if (!window.deleted && !window.minimized && Util.intersectionArea(rect, Util.geometryOf(window)) > 0) {
+            return window;
+        }
+    }
+    return null;
 }
 
 export function onWindowClosed(window) {
@@ -1247,6 +1298,9 @@ export function refresh() {
                 view.visible = true;
             }
         }
+    }
+    if (view.visible && view.geometry && coveredBy(view.geometry)) {
+        view.visible = false;   // a menu or popup is open over the strip
     }
     setView(view);
     if (view.visible && view.geometry) {
