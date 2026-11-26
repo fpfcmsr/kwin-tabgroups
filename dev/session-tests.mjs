@@ -511,13 +511,22 @@ check("an unloaded script does not group windows any more",
     [false, false, false, false]);
 
 // --- turning the script off and on again ----------------------------------------
-// KWin can hand the module of the previous run to the next one.
+// KWin can hand the module of the previous run to the next one. A window that
+// keeps itself out of the task bar and the switcher is the application's choice
+// and stays as it is.
+const parked = new FakeWindow("tray app", rect(14000, 0, 400, 300));
+open(parked);
+parked.skipTaskbar = true;
+parked.skipSwitcher = true;
+parked.minimized = true;
 Controller.init({ ui: { setView: (next) => { view = next; } }, workspace: workspace,
                   config: Object.assign({}, config, { dwell: 0 }), settings: null, schedule: schedule,
                   overlayCaption: "tabgroups-test-strip" });
 Controller.groupPair(afterA, afterB);
 focus(afterB);
 check("the script works again after it was turned off and on", strip(), { visible: true, tabs: ["editor", "files"] });
+check("a window the application hid itself is left alone",
+    [parked.minimized, parked.skipTaskbar, parked.skipSwitcher], [true, true, true]);
 
 const failures = results.filter((result) => !result.ok);
 for (const result of results) {

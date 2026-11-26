@@ -77,7 +77,6 @@ export function init(api) {
         registerWindow(list[i]);
         trackCover(list[i]);
     }
-    repairLeftovers();
     restoreSession();
     if (config.restoreAfterRestart) {
         loadRestoreRecord();
@@ -594,23 +593,6 @@ function originalFlagsOf(window) {
         };
     }
     return originalFlags[key];
-}
-
-// A previous run can be interrupted (unloaded script, crashed compositor) and
-// leave hidden-from-taskbar-and-switcher windows behind. They are invisible to
-// the user, so they are released on startup.
-function repairLeftovers() {
-    for (var i = 0; i < registry.length; ++i) {
-        var window = registry[i];
-        if (!window.skipTaskbar || !window.skipSwitcher || Model.contains(store, window)) {
-            continue;
-        }
-        suppress = true;
-        window.minimized = false;
-        window.skipTaskbar = false;
-        window.skipSwitcher = false;
-        suppress = false;
-    }
 }
 
 export function groupActiveWithNext() {
