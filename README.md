@@ -1,6 +1,6 @@
 Very hacky tab groups for KDE Plasma 
 
-[Screencast_20260920_205411.webm](https://github.com/user-attachments/assets/61284f04-3856-43c6-993d-fc4cabee2662)
+[Screencast_20261126_104548.webm](https://github.com/user-attachments/assets/d4e17409-f8a3-49f3-a7f5-a54f3fcf04d8)
 
 
 - Tested with plasma 6.7 and 6.8 currently
