@@ -528,6 +528,29 @@ check("the script works again after it was turned off and on", strip(), { visibl
 check("a window the application hid itself is left alone",
     [parked.minimized, parked.skipTaskbar, parked.skipSwitcher], [true, true, true]);
 
+// --- rebuilding groups after a restart -------------------------------------------
+// A saved group is rebuilt from the windows that come back, but never from a window
+// that is already a tab of another group.
+const savedGroup = (...roles) => ({
+    savedAt: Date.now(), geometry: rect(15000, 0, 400, 300), activeIndex: 0,
+    members: roles.map((role) => ({ appId: "org.kde." + role, caption: role, geometry: rect(15000, 0, 400, 300) }))
+});
+Controller.shutdown();
+Controller.init({ ui: { setView: (next) => { view = next; } }, workspace: workspace,
+                  config: Object.assign({}, config, { dwell: 0, restoreAfterRestart: true }),
+                  settings: { session: "", restore: JSON.stringify({ version: 1, groups: [savedGroup("pp", "qq")] }),
+                              sync() {} },
+                  schedule: schedule, overlayCaption: "tabgroups-test-strip" });
+const pp = new FakeWindow("pp", rect(15000, 0, 400, 300));
+const keeper = new FakeWindow("keeper", rect(15500, 0, 400, 300));
+open(pp, keeper);
+Controller.groupPair(keeper, pp);
+focus(pp);
+const qq = new FakeWindow("qq", rect(15000, 400, 400, 300));
+open(qq);
+check("a window already in a group is not pulled into a rebuilt one",
+    [qq.minimized, strip().tabs], [false, ["keeper", "pp"]]);
+
 const failures = results.filter((result) => !result.ok);
 for (const result of results) {
     console.log(result.line);

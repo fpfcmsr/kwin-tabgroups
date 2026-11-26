@@ -301,8 +301,9 @@ function resolvePendingRestore() {
         }
         var fresh = [];
         for (var m = 0; m < result.members.length; ++m) {
-            var window = result.members[m].window;
-            if (!item.group || !Model.contains(store, window)) {
+            // A window that is already a tab (of this group or another one) stays
+            // where it is: a window belongs to one group only.
+            if (!Model.contains(store, result.members[m].window)) {
                 fresh.push(result.members[m]);
             }
         }
