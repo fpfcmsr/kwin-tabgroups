@@ -114,12 +114,23 @@ Item {
         onActivated: Controller.nextTab(-1)
     }
 
-    // Drives the controller's short timers (overlay lookup, focus re-assertion).
-    Timer {
-        interval: 100
-        repeat: true
-        running: true
-        onTriggered: Controller.tick()
+    // The controller's short delays (overlay lookup, focus re-assertion) each get a
+    // one-shot timer that exists only until it has fired.
+    Component {
+        id: oneShot
+
+        Timer {
+            repeat: false
+        }
+    }
+
+    function schedule(delay, callback) {
+        var timer = oneShot.createObject(shell, { interval: Math.max(0, delay) });
+        timer.triggered.connect(function () {
+            timer.destroy();
+            callback();
+        });
+        timer.start();
     }
 
     Component.onCompleted: {
@@ -129,6 +140,7 @@ Item {
             workspace: KWinApi.Workspace,
             config: shell.configuration,
             settings: stateStore,
+            schedule: shell.schedule,
             overlayCaption: barWindow.title
         });
     }

@@ -17,7 +17,7 @@ var hooks = [];           // { window, handlers }
 var drag = Drag.makeState();
 var prompt = null;        // { target, dragged } while the user is asked
 var suppress = false;     // true while the script itself changes window state
-var timers = [];
+var scheduler = null;     // function (delay, callback), provided by the QML side
 var shuttingDown = false;
 var overlayCaption = "tabgroups-overlay";   // replaced by init()
 var overlayWindow = null;
@@ -56,6 +56,7 @@ export function init(api) {
     ws = api.workspace;
     config = api.config;
     settings = api.settings || null;
+    scheduler = api.schedule;
     if (api.overlayCaption) {
         overlayCaption = api.overlayCaption;
     }
@@ -103,7 +104,6 @@ export function shutdown() {
     hooks = [];
     registry = [];
     store = Model.createStore();
-    timers = [];
     setView({ visible: false, geometry: null, tabs: [], hint: "", prompt: null });
 }
 
@@ -1164,30 +1164,16 @@ export function tabsFor(group) {
 
 // ------------------------------------------------------------------ timers
 
+// Runs `callback` once after `delay` ms, unless the script is unloaded first.
 export function schedule(delay, callback) {
-    timers.push({ due: Date.now() + delay, callback: callback });
-}
-
-export function tick() {
-    if (timers.length === 0) {
-        return;
-    }
-    var now = Date.now();
-    var due = [];
-    var pending = [];
-    for (var i = 0; i < timers.length; ++i) {
-        if (timers[i].due <= now) {
-            due.push(timers[i]);
-        } else {
-            pending.push(timers[i]);
+    scheduler(delay, function () {
+        if (shuttingDown) {
+            return;
         }
-    }
-    timers = pending;
-    for (var j = 0; j < due.length; ++j) {
         try {
-            due[j].callback();
+            callback();
         } catch (error) {
             console.warn("tabgroups: " + error);
         }
-    }
+    });
 }

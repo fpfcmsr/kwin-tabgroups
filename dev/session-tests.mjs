@@ -198,23 +198,19 @@ const close = (window, successor) => {
     workspace.windows = workspace.windows.filter((candidate) => candidate !== window);
     workspace.windowRemoved.emit(window);
 };
-// The controller defers some decisions to the next timer tick; move the clock on
-// instead of sleeping. Qt's JS engine refuses to move Date.now, so the checks that
-// need it are skipped there.
+// The controller defers some decisions with one-shot timers. The fake scheduler
+// keeps its own clock, so a test moves time on instead of sleeping.
+let clock = 0;
+const timers = [];
+const schedule = (delay, callback) => {
+    timers.push({ due: clock + delay, callback: callback });
+};
 function advance(milliseconds) {
-    const realNow = Date.now;
-    let moved = false;
-    try {
-        Date.now = () => realNow() + milliseconds;
-        moved = Date.now() !== realNow();
-    } catch (error) {
-        moved = false;
+    clock += milliseconds;
+    timers.sort((a, b) => a.due - b.due);
+    while (timers.length > 0 && timers[0].due <= clock) {
+        timers.shift().callback();
     }
-    if (moved) {
-        Controller.tick();
-        Date.now = realNow;
-    }
-    return moved;
 }
 const strip = () => ({ visible: view.visible, tabs: view.tabs.map((tab) => tab.title) });
 const tabStates = () => view.tabs.map((tab) => [tab.title, tab.active, tab.attention]);
@@ -232,7 +228,7 @@ const hidden = (geometry) => ({ minimized: true, skipTaskbar: false, skipSwitche
 const pairA = new FakeWindow("editor", rect(100, 100, 800, 600));
 const pairB = new FakeWindow("files", rect(300, 250, 500, 400));
 Controller.init({ ui: { setView: (next) => { view = next; } }, workspace: workspace, config: config,
-                  settings: null, overlayCaption: "tabgroups-test-strip" });
+                  settings: null, schedule: schedule, overlayCaption: "tabgroups-test-strip" });
 open(pairA, pairB);
 
 Controller.groupPair(pairA, pairB);
@@ -344,11 +340,8 @@ open(backA, backB);
 Controller.groupPair(backA, backB);
 focus(backB);
 backA.minimized = false;
-if (advance(100)) {
-    check("a tab restored behind the group is hidden again", backA.minimized, true);
-} else {
-    console.log("skip: a tab restored behind the group (the clock cannot be moved)");
-}
+advance(100);
+check("a tab restored behind the group is hidden again", backA.minimized, true);
 
 // --- a tab that wants attention is marked in the strip -------------------------
 backA.demandsAttention = true;
