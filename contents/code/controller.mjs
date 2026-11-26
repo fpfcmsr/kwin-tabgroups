@@ -522,25 +522,8 @@ export function onWindowClosed(window) {
         moving = null;
         stripDragging = false;
     }
-    if (!group) {
-        refresh();
-        return;
-    }
-    var member = Model.memberFor(group, window);
-    var wasActive = !!member && Model.activeMember(group) === member;
-    Model.removeMember(group, window);
-    if (group.members.length < 2) {
-        // The last tab of the group: dissolving restores its window, so that
-        // closing one tab never takes the remaining window with it.
-        dissolveGroup(group, true);
-    } else {
-        if (wasActive && !group.collapsed) {
-            activate(group, Model.activeMember(group).window);
-        } else {
-            // A collapsed group stays collapsed: closing a tab must not bring the
-            // remaining ones back on screen.
-            applyGroup(group);
-        }
+    if (group) {
+        removeFromGroup(group, window);
     }
     refresh();
 }
@@ -665,7 +648,7 @@ export function groupPair(target, dragged) {
     }
 
     var geometry = Util.geometryOf(target);
-    leaveEveryGroup(dragged);
+    leaveGroup(dragged);
 
     var group = targetGroup;
     if (!group) {
@@ -722,23 +705,39 @@ export function mergeGroup(target, source) {
     refresh();
 }
 
-// Removes the window from whichever group still lists it, so that a group can
-// never end up with a member that belongs to another group.
-export function leaveEveryGroup(window) {
-    var key = String(window.internalId);
-    for (var i = store.groups.length - 1; i >= 0; --i) {
-        var group = store.groups[i];
-        for (var j = group.members.length - 1; j >= 0; --j) {
-            if (String(group.members[j].window.internalId) === key) {
-                Model.removeMember(group, window);
-                if (group.members.length < 2) {
-                    dissolveGroup(group, false);
-                } else {
-                    applyGroup(group);
-                }
-                break;
-            }
-        }
+// Takes a window out of its group because it is about to join another one. The
+// group it leaves stays where it is, and is dissolved if one window is left.
+function leaveGroup(window) {
+    var group = Model.groupForWindow(store, window);
+    if (!group) {
+        return;
+    }
+    Model.removeMember(group, window);
+    if (group.members.length < 2) {
+        dissolveGroup(group, false);
+    } else {
+        applyGroup(group);
+    }
+}
+
+// Takes a closed or detached window out of its group. If it was the tab on screen,
+// the next tab takes its place; a collapsed group stays collapsed, so that closing
+// a tab never brings the others back on screen. A group left with one window is
+// dissolved, which restores that window: closing a tab never takes the other
+// window with it.
+function removeFromGroup(group, window) {
+    var member = Model.memberFor(group, window);
+    if (!member) {
+        return;
+    }
+    var wasShown = Model.activeMember(group) === member && !group.collapsed;
+    Model.removeMember(group, window);
+    if (group.members.length < 2) {
+        dissolveGroup(group, true);
+    } else if (wasShown) {
+        activate(group, Model.activeMember(group).window);
+    } else {
+        applyGroup(group);
     }
 }
 
@@ -770,29 +769,11 @@ export function detachTab(index) {
         return;
     }
     forgetRestoreEntry(group);
-    detachFromGroup(group, group.members[index].window, true);
+    var member = group.members[index];
+    restoreMember(member, true);
+    removeFromGroup(group, member.window);
     persist();
     refresh();
-}
-
-export function detachFromGroup(group, window, restoreGeometry) {
-    var member = Model.memberFor(group, window);
-    if (!member) {
-        return;
-    }
-    var wasActive = Model.activeMember(group) === member;
-    Model.removeMember(group, window);
-    restoreMember(member, restoreGeometry);
-
-    if (group.members.length < 2) {
-        dissolveGroup(group, true);
-        return;
-    }
-    if (wasActive && !group.collapsed) {
-        activate(group, Model.activeMember(group).window);
-    } else {
-        applyGroup(group);
-    }
 }
 
 export function switchTo(index) {
