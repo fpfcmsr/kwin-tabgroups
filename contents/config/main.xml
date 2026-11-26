@@ -6,7 +6,7 @@
   <kcfgfile name=""/>
   <entry name="PromptOnDrop" type="Bool">
     <label>Ask before grouping</label>
-    <default>true</default>
+    <default>false</default>
   </entry>
   <entry name="DwellTimeMs" type="Int">
     <label>Time a window must be held over a target (ms)</label>

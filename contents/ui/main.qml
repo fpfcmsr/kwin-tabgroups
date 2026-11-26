@@ -48,7 +48,7 @@ Item {
 
     function readConfiguration() {
         return {
-            promptOnDrop: KWin.readConfig("PromptOnDrop", true),
+            promptOnDrop: KWin.readConfig("PromptOnDrop", false),
             groupDragOnStrip: KWin.readConfig("GroupDragOnStrip", true),
             dwell: Number(KWin.readConfig("DwellTimeMs", 250)),
             hideInactive: Number(KWin.readConfig("HideInactive", 1)),
