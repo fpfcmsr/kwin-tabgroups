@@ -7,9 +7,9 @@
 // `collapsed` means the user minimized the visible tab: the whole group follows it.
 // It is not part of the saved state, a restored group comes back on screen.
 
-export // Windows are compared by their identity id, not by object identity: the QML
+// Windows are compared by their identity id, not by object identity: the QML
 // engine may hand out different wrappers for the same window.
-function keyOf(window) {
+export function keyOf(window) {
     return window ? String(window.internalId) : "";
 }
 

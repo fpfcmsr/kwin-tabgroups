@@ -614,10 +614,9 @@ export function groupPair(target, dragged) {
     refresh();
 }
 
-// Turns the active group back into independent windows.
-export // Removes the window from whichever group still lists it, so that a group can
+// Removes the window from whichever group still lists it, so that a group can
 // never end up with a member that belongs to another group.
-function leaveEveryGroup(window) {
+export function leaveEveryGroup(window) {
     var key = String(window.internalId);
     for (var i = store.groups.length - 1; i >= 0; --i) {
         var group = store.groups[i];
@@ -635,6 +634,7 @@ function leaveEveryGroup(window) {
     }
 }
 
+// Turns the active group back into independent windows.
 export function ungroupActive() {
     var group = activeGroup();
     if (group) {
