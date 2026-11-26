@@ -498,6 +498,18 @@ focus(namedB);
 namedA.caption = "";
 check("a tab without a title shows its application", strip().tabs, ["org.kde.editor", "files"]);
 
+// --- an unloaded script lets go of the session ----------------------------------
+// KWin keeps the module alive after an unload. A copy that still listens keeps
+// grouping windows, without a strip to show it. This has to be the last check.
+Controller.shutdown();
+const afterA = new FakeWindow("editor", rect(13000, 0, 400, 300));
+const afterB = new FakeWindow("files", rect(13500, 0, 400, 300));
+open(afterA, afterB);
+dragOnto(afterB, rect(13000, 0, 400, 300), false);
+check("an unloaded script does not group windows any more",
+    [state(afterA).minimized, state(afterB).minimized, state(afterA).skipSwitcher, state(afterB).skipSwitcher],
+    [false, false, false, false]);
+
 const failures = results.filter((result) => !result.ok);
 for (const result of results) {
     console.log(result.line);

@@ -94,9 +94,14 @@ export function reloadConfig(next) {
     refresh();
 }
 
-// Unloading the script must leave the session as it was.
+// Unloading the script must leave the session as it was. KWin keeps the module
+// alive after an unload, so everything it is connected to has to be let go:
+// otherwise the old copy keeps grouping windows, with no strip to show it.
 export function shutdown() {
     shuttingDown = true;
+    ws.windowAdded.disconnect(onWindowAdded);
+    ws.windowRemoved.disconnect(onWindowRemoved);
+    ws.windowActivated.disconnect(onWindowActivated);
     persist();   // the last state is what a reload rebuilds from
     var groups = store.groups.slice();
     for (var i = 0; i < groups.length; ++i) {
@@ -111,6 +116,10 @@ export function shutdown() {
         untrackCover(covers[0]);
     }
     store = Model.createStore();
+    Drag.reset(drag);
+    moving = null;
+    stripDragging = false;
+    prompt = null;
     setView({ visible: false, geometry: null, tabs: [], hint: "", prompt: null });
 }
 
@@ -432,6 +441,9 @@ export function unregisterWindow(window) {
 }
 
 export function onWindowAdded(window) {
+    if (shuttingDown) {
+        return;
+    }
     registerWindow(window);
     if (trackCover(window)) {
         refresh();
@@ -443,6 +455,9 @@ export function onWindowAdded(window) {
 }
 
 export function onWindowRemoved(window) {
+    if (shuttingDown) {
+        return;
+    }
     unregisterWindow(window);
     untrackCover(window);
     refresh();
@@ -522,7 +537,7 @@ export function onWindowClosed(window) {
 }
 
 export function onWindowActivated() {
-    if (suppress) {
+    if (shuttingDown || suppress) {
         return;   // a consequence of our own state changes, the caller refreshes
     }
     adoptActiveWindow();
