@@ -1,0 +1,75 @@
+# Publishes an installable .kwinscript when a version tag is pushed:
+#   git tag v0.2.0 && git push origin v0.2.0
+# The tag has to match "Version" in metadata.json.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the release notes list the commits since the last tag
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check the tag matches metadata.json
+        run: |
+          VERSION=$(jq -r .KPlugin.Version metadata.json)
+          if [ "v$VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match metadata.json version $VERSION"
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Run the tests
+        run: |
+          node dev/logic-tests.mjs
+          node dev/session-tests.mjs
+
+      - name: Build the package
+        run: |
+          PACKAGE="tabgroups-$VERSION.kwinscript"
+          zip -r "$PACKAGE" metadata.json contents LICENSE
+          echo "PACKAGE=$PACKAGE" >> "$GITHUB_ENV"
+
+      - name: Write the release notes
+        run: |
+          PREVIOUS=$(git describe --tags --abbrev=0 "$GITHUB_REF_NAME^" 2>/dev/null || true)
+          {
+            echo "## Install"
+            echo
+            echo "Download \`$PACKAGE\`, then either"
+            echo "- System Settings > Window Management > KWin Scripts > Install from File..., or"
+            echo "- \`kpackagetool6 --type=KWin/Script -i $PACKAGE\` (use \`-u\` to update)."
+            echo
+            echo "Enable Tab Groups in the KWin Scripts list if it is not ticked."
+            echo "After an update, log out and back in: KWin keeps running the old version until then."
+            echo
+            echo "## Changes"
+            echo
+            if [ -n "$PREVIOUS" ]; then
+              git log --format='- %s' "$PREVIOUS..$GITHUB_REF_NAME"
+            else
+              git log --format='- %s' "$GITHUB_REF_NAME"
+            fi
+          } > notes.md
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$PACKAGE" \
+            --title "Tab Groups $VERSION" \
+            --notes-file notes.md
