@@ -11,5 +11,16 @@ Not compatible with Kwin scripts that modify similar behavior.
 
 
 How to install:  
+download the latest .kwinscript from the Releases page, then  
+System Settings > Window Management > KWin Scripts > Install from File...  
+(or: kpackagetool6 --type=KWin/Script -i tabgroups-&lt;version&gt;.kwinscript, use -u to update)  
+after an update, log out and back in so KWin picks up the new version  
+
+From source:  
 clone the repo then run install.sh  
 to update: git pull -> then run ./dev/reload.sh  
+
+How to release:  
+bump "Version" in metadata.json and commit, then  
+git tag v&lt;version&gt; && git push origin v&lt;version&gt;  
+GitHub builds the .kwinscript and publishes the release  
