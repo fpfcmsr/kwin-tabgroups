@@ -582,6 +582,15 @@ Controller.reloadConfig(Object.assign({}, config, { dwell: 0, hideInactive: 0 })
 check("switching to cover mode uncovers the tabs of every group", modeA.minimized, false);
 Controller.reloadConfig(Object.assign({}, config, { dwell: 0 }));
 
+// --- Meta+G never picks a window without a title --------------------------------
+const solo = new FakeWindow("solo", rect(19000, 0, 400, 300));
+const ghost = new FakeWindow("ghost", rect(0, 0, 20000, 2000));
+ghost.caption = "";
+open(solo, ghost);
+focus(solo);
+Controller.groupActiveWithNext();
+check("grouping with the next window skips a window without a title", strip().tabs.indexOf("org.kde.ghost"), -1);
+
 const failures = results.filter((result) => !result.ok);
 for (const result of results) {
     console.log(result.line);

@@ -621,14 +621,10 @@ export function findPartner(excludeGroup) {
     var bestScore = -1;
     for (var i = 0; i < registry.length; ++i) {
         var window = registry[i];
-        if (window === active || window.minimized || window.deleted) {
+        if (window === active || !isTarget(window)) {
             continue;
         }
-        var group = Model.groupForWindow(store, window);
-        if (excludeGroup && group === excludeGroup) {
-            continue;
-        }
-        if (!onCurrentDesktop(window)) {
+        if (excludeGroup && Model.groupForWindow(store, window) === excludeGroup) {
             continue;
         }
         var score = 0;
@@ -648,6 +644,13 @@ export function findPartner(excludeGroup) {
 
 export function onCurrentDesktop(window) {
     return window.onAllDesktops || window.desktops.indexOf(ws.currentDesktop) >= 0;
+}
+
+// A window the user can see and group with: on screen, on this desktop, and with
+// a title. Invisible helper windows (often as large as the screen) have none.
+function isTarget(window) {
+    return !window.minimized && !window.deleted && onCurrentDesktop(window)
+        && !!String(window.caption || "").trim();
 }
 
 // Makes `dragged` a tab of the group that owns `target`.
@@ -1154,19 +1157,11 @@ export function dropCandidates(dragged) {
     var draggedGroup = Model.groupForWindow(store, dragged);
     for (var i = 0; i < registry.length; ++i) {
         var window = registry[i];
-        if (window === dragged || window.minimized || window.deleted) {
-            continue;
-        }
-        if (!String(window.caption || "").trim()) {
-            // Invisible helper windows (often as large as the screen) have no title;
-            // a window the user can see and aim at always has one.
+        if (window === dragged || !isTarget(window)) {
             continue;
         }
         var group = Model.groupForWindow(store, window);
         if (group && group === draggedGroup) {
-            continue;
-        }
-        if (!onCurrentDesktop(window)) {
             continue;
         }
         candidates.push({
