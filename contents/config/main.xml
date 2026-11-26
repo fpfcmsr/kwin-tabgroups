@@ -6,7 +6,7 @@
   <kcfgfile name=""/>
   <entry name="PromptOnDrop" type="Bool">
     <label>Ask before grouping</label>
-    <default>false</default>
+    <default>true</default>
   </entry>
   <entry name="OverlapThreshold" type="Int">
     <label>Overlap needed to offer grouping (percent of the dragged window)</label>

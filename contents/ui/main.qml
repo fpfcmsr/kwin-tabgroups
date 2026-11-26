@@ -48,7 +48,7 @@ Item {
 
     function readConfiguration() {
         return {
-            promptOnDrop: KWin.readConfig("PromptOnDrop", false),
+            promptOnDrop: KWin.readConfig("PromptOnDrop", true),
             groupDragOnStrip: KWin.readConfig("GroupDragOnStrip", true),
             overlap: Number(KWin.readConfig("OverlapThreshold", 60)) / 100,
             dwell: Number(KWin.readConfig("DwellTimeMs", 250)),
