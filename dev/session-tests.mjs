@@ -418,6 +418,27 @@ dragOnto(dropMoved, rect(3000, 0, 400, 300), false);
 focus(dropMoved);
 check("moving a window onto another one groups them", strip(), { visible: true, tabs: ["terminal", "music"] });
 
+// --- dropping a group onto a window brings every tab along ---------------------
+// The group moves with its visible tab, so dropping that tab drops the group.
+const mergeA = new FakeWindow("editor", rect(7000, 0, 400, 300));
+const mergeB = new FakeWindow("files", rect(7000, 400, 400, 300));
+const mergeC = new FakeWindow("photos", rect(7500, 0, 500, 350));
+open(mergeA, mergeB, mergeC);
+Controller.groupPair(mergeA, mergeB);
+focus(mergeB);
+mergeB.resize = false;
+dragOnto(mergeB, rect(7500, 0, 500, 350), false);
+focus(mergeB);
+check("dropping a group onto a window makes one larger group", strip(),
+    { visible: true, tabs: ["photos", "editor", "files"] });
+check("the tab that was shown stays shown", state(mergeB), plain(rect(7500, 0, 500, 350)));
+check("the other tabs of the dropped group come along", state(mergeA), hidden(rect(7500, 0, 500, 350)));
+check("the window it was dropped on becomes a tab", state(mergeC), hidden(rect(7500, 0, 500, 350)));
+Controller.ungroupActive();
+check("ungrouping sends each window back to where it was before it was grouped",
+    [Util.geometryOf(mergeA), Util.geometryOf(mergeB), Util.geometryOf(mergeC)],
+    [rect(7000, 0, 400, 300), rect(7000, 400, 400, 300), rect(7500, 0, 500, 350)]);
+
 const failures = results.filter((result) => !result.ok);
 for (const result of results) {
     console.log(result.line);

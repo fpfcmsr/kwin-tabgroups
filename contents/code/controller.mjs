@@ -614,6 +614,48 @@ export function groupPair(target, dragged) {
     refresh();
 }
 
+// What a drop means: the visible tab of a group stands for the whole group, since
+// the group moved with it; any other window joins on its own.
+function dropOnto(target, dragged) {
+    var group = Model.groupForWindow(store, dragged);
+    var active = group ? Model.activeMember(group) : null;
+    if (active && active.window === dragged) {
+        mergeGroup(target, group);
+    } else {
+        groupPair(target, dragged);
+    }
+}
+
+// Moves every tab of `source` into the group of `target`, or into a new group with
+// `target`. The tabs keep the geometry they return to when they leave, and the tab
+// that was shown stays the shown one.
+export function mergeGroup(target, source) {
+    var targetGroup = Model.groupForWindow(store, target);
+    if (!target || !source || targetGroup === source) {
+        return;
+    }
+    var geometry = Util.geometryOf(target);
+    var shown = Model.activeMember(source).window;
+    var members = source.members.slice();
+    forgetRestoreEntry(source);
+    if (moving === source) {
+        moving = null;
+    }
+    Model.dissolve(store, source);
+
+    var group = targetGroup;
+    if (!group) {
+        group = Model.createGroup(store, makeMember(target), geometry);
+    }
+    for (var i = 0; i < members.length; ++i) {
+        Model.addMember(group, members[i], geometry);
+    }
+    group.geometry = geometry;
+
+    activate(group, shown);
+    refresh();
+}
+
 // Removes the window from whichever group still lists it, so that a group can
 // never end up with a member that belongs to another group.
 export function leaveEveryGroup(window) {
@@ -1021,7 +1063,7 @@ export function onInteractiveFinished(window) {
         if (config.promptOnDrop) {
             prompt = { target: target, dragged: window };
         } else {
-            groupPair(target, window);
+            dropOnto(target, window);
         }
     }
     refresh();
@@ -1056,7 +1098,7 @@ export function acceptPrompt() {
     }
     var pending = prompt;
     prompt = null;
-    groupPair(pending.target, pending.dragged);
+    dropOnto(pending.target, pending.dragged);
 }
 
 export function cancelPrompt() {
