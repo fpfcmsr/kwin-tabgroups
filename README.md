@@ -17,7 +17,7 @@ updates show up in the same Get New... dialog, log out and back in after updatin
 
 From source:  
 clone the repo then run install.sh  
-to update: git pull -> then run ./dev/reload.sh again and log out and back in
+to update: git pull -> then run install.sh again and log out and back in
 
 License:  
 GPL-2.0-or-later (GNU General Public License version 2, or any later version), see LICENSE
