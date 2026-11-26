@@ -489,6 +489,15 @@ dragOnto(loner, rect(9100, 100, 400, 300), false);
 focus(loner);
 check("dropping onto a window without a title does not group them", strip().visible, false);
 
+// --- a tab without a title shows its application -------------------------------
+const namedA = new FakeWindow("editor", rect(12000, 0, 400, 300));
+const namedB = new FakeWindow("files", rect(12000, 400, 400, 300));
+open(namedA, namedB);
+Controller.groupPair(namedA, namedB);
+focus(namedB);
+namedA.caption = "";
+check("a tab without a title shows its application", strip().tabs, ["org.kde.editor", "files"]);
+
 const failures = results.filter((result) => !result.ok);
 for (const result of results) {
     console.log(result.line);

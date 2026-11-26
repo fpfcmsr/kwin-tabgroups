@@ -1270,7 +1270,7 @@ export function refresh() {
                                            prompt.target, config);
         }
         view.prompt = {
-            text: "Group with " + Util.elide(prompt.target.caption, 24) + "?",
+            text: "Group with " + Util.elide(nameOf(prompt.target), 24) + "?",
             accept: "Group",
             cancel: "Cancel"
         };
@@ -1291,7 +1291,7 @@ export function refresh() {
             view.geometry = Policy.barRect({ geometry: drag.candidate.geometry, members: [] },
                                            drag.candidate.window, config);
         }
-        view.hint = "Release to group with " + Util.elide(drag.candidate.window.caption, 24);
+        view.hint = "Release to group with " + Util.elide(nameOf(drag.candidate.window), 24);
         view.visible = true;
     } else {
         var group = activeGroup();
@@ -1316,13 +1316,19 @@ export function refresh() {
     }
 }
 
+// The name shown for a window: its title, or its application when it has none.
+export function nameOf(window) {
+    var caption = String(window.caption || "").trim();
+    return caption || State.appIdOf(window) || "Untitled window";
+}
+
 export function tabsFor(group) {
     var active = Model.activeMember(group);
     var tabs = [];
     for (var i = 0; i < group.members.length; ++i) {
         var window = group.members[i].window;
         tabs.push({
-            title: window.caption,
+            title: nameOf(window),
             active: !!active && window === active.window,
             attention: !!window.demandsAttention
         });
