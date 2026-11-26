@@ -1000,8 +1000,7 @@ export function onInteractiveStepped(window) {
     if (drag.dragging !== window || window.resize === true) {
         return;
     }
-    var pointer = ws.cursorPos;
-    var target = Drag.update(drag, { x: pointer.x, y: pointer.y }, Date.now(), dropCandidates(window), config);
+    var target = updateDrop(window);
     if (!target && !drag.candidate) {
         refresh();
     } else if (target) {
@@ -1009,9 +1008,30 @@ export function onInteractiveStepped(window) {
     }
 }
 
+// Feeds the pointer position to the drop detection. KWin only reports a step when
+// the window moves, and a user aiming at a title bar holds still on it: a new
+// target is therefore checked again once the hold time is over.
+function updateDrop(window) {
+    var pointer = ws.cursorPos;
+    var tracked = drag.candidate;
+    var target = Drag.update(drag, { x: pointer.x, y: pointer.y }, Date.now(), dropCandidates(window), config);
+    if (drag.candidate && drag.candidate !== tracked && !drag.armed) {
+        schedule(config.dwell + 10, function () {
+            if (drag.dragging === window && !drag.armed) {
+                updateDrop(window);
+                refresh();
+            }
+        });
+    }
+    return target;
+}
+
 export function onInteractiveFinished(window) {
     if (drag.dragging !== window) {
         return;
+    }
+    if (drag.candidate && !drag.armed) {
+        updateDrop(window);   // released on the title bar before the check came round
     }
     var target = drag.armed && drag.candidate ? drag.candidate.window : null;
     Drag.reset(drag);

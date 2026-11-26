@@ -203,6 +203,8 @@ const close = (window, successor) => {
 // keeps its own clock, so a test moves time on instead of sleeping.
 let clock = 0;
 const timers = [];
+const startTime = Date.now();
+Date.now = () => startTime + clock;   // the hold time of a drag is measured on it
 const schedule = (delay, callback) => {
     timers.push({ due: clock + delay, callback: callback });
 };
@@ -428,6 +430,37 @@ open(bodyTarget, bodyMoved);
 dragOnto(bodyMoved, rect(4000, 0, 400, 300), { x: 4200, y: 150 }, false);
 focus(bodyMoved);
 check("dropping onto the body of a window does not group them", strip().visible, false);
+
+// --- holding still on a title bar arms it --------------------------------------
+// KWin reports no step while the pointer rests on the title bar, so the hold time
+// has to run out without one.
+Controller.reloadConfig(config);
+const holdOnto = (window, geometry, pointer) => {
+    window.resize = false;
+    workspace.cursorPos = pointer;
+    window.interactiveMoveResizeStarted.emit();
+    window.frameGeometry = geometry;
+    window.interactiveMoveResizeStepped.emit(geometry);
+};
+const holdTarget = new FakeWindow("calendar", rect(5000, 0, 400, 300));
+const holdMoved = new FakeWindow("clock", rect(5500, 0, 400, 300));
+open(holdTarget, holdMoved);
+holdOnto(holdMoved, rect(5000, 0, 400, 300), { x: 5200, y: 10 });
+check("the title bar is not armed right away", view.hint, "");
+advance(300);
+check("holding still on the title bar arms it", view.hint, "Release to group with calendar");
+holdMoved.interactiveMoveResizeFinished.emit();
+focus(holdMoved);
+check("releasing after holding still groups them", strip(), { visible: true, tabs: ["calendar", "clock"] });
+
+const quickTarget = new FakeWindow("weather", rect(6000, 0, 400, 300));
+const quickMoved = new FakeWindow("maps", rect(6500, 0, 400, 300));
+open(quickTarget, quickMoved);
+holdOnto(quickMoved, rect(6000, 0, 400, 300), { x: 6200, y: 10 });
+clock += 300;   // the hold time is over, but the check has not come round yet
+quickMoved.interactiveMoveResizeFinished.emit();
+focus(quickMoved);
+check("releasing once the hold time is over groups them", strip(), { visible: true, tabs: ["weather", "maps"] });
 
 const failures = results.filter((result) => !result.ok);
 for (const result of results) {
