@@ -19,5 +19,10 @@ From source:
 clone the repo then run install.sh  
 to update: git pull -> then run install.sh again and log out and back in
 
+Trying out changes:  
+./dev/reload.sh loads your working copy into the running session right away, no log out needed  
+useful while developing: run it again after every edit to see the change  
+it is temporary: after logging out KWin runs the installed version again, so run install.sh to keep a change  
+
 License:  
 GPL-2.0-or-later (GNU General Public License version 2, or any later version), see LICENSE
