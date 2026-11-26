@@ -8,6 +8,10 @@
     <label>Ask before grouping</label>
     <default>false</default>
   </entry>
+  <entry name="OverlapThreshold" type="Int">
+    <label>Overlap needed to offer grouping (percent of the dragged window)</label>
+    <default>60</default>
+  </entry>
   <entry name="DwellTimeMs" type="Int">
     <label>Time a window must be held over a target (ms)</label>
     <default>250</default>

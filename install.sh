@@ -71,7 +71,7 @@ fi
 cat <<EOF
 
 Usage
-  drag one window's title bar onto another window's title bar (hold briefly) to group them
+  drag one window's title bar onto another window (hold briefly) to group them
   Meta+G            group the active window with the next window
   Meta+Shift+G      ungroup
   Meta+PageUp/Down  cycle through the tabs

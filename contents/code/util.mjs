@@ -23,9 +23,25 @@ export function titlebarHeight(window) {
     return Math.max(0, Math.round(client.y - frame.y));
 }
 
-export function containsPoint(r, point) {
-    return point.x >= r.x && point.x < r.x + r.width
-        && point.y >= r.y && point.y < r.y + r.height;
+export function area(r) {
+    return Math.max(0, r.width) * Math.max(0, r.height);
+}
+
+export function intersectionArea(a, b) {
+    var x1 = Math.max(a.x, b.x);
+    var y1 = Math.max(a.y, b.y);
+    var x2 = Math.min(a.x + a.width, b.x + b.width);
+    var y2 = Math.min(a.y + a.height, b.y + b.height);
+    if (x2 <= x1 || y2 <= y1) {
+        return 0;
+    }
+    return (x2 - x1) * (y2 - y1);
+}
+
+// How much of `r` is covered by `other`, in the range 0..1.
+export function overlapRatio(r, other) {
+    var own = area(r);
+    return own === 0 ? 0 : intersectionArea(r, other) / own;
 }
 
 export function same(a, b) {

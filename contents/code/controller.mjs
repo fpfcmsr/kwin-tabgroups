@@ -367,7 +367,7 @@ export function isGroupable(window) {
 export function connectWindow(window) {
     var handlers = {
         started: function () { onInteractiveStarted(window); },
-        stepped: function () { onInteractiveStepped(window); },
+        stepped: function (geometry) { onInteractiveStepped(window, geometry); },
         finished: function () { onInteractiveFinished(window); },
         geometry: function () { onFrameGeometryChanged(window); },
         minimized: function () { onMinimizedChanged(window); },
@@ -995,12 +995,14 @@ export function onInteractiveStarted(window) {
     Drag.begin(drag, window, Util.geometryOf(window));
 }
 
-export function onInteractiveStepped(window) {
+export function onInteractiveStepped(window, geometry) {
     // A resize is never a drop: only moving a window onto another one groups them.
     if (drag.dragging !== window || window.resize === true) {
         return;
     }
-    var target = updateDrop(window);
+    var rect = Util.rect(Math.round(geometry.x), Math.round(geometry.y),
+                         Math.round(geometry.width), Math.round(geometry.height));
+    var target = Drag.update(drag, rect, Date.now(), dropCandidates(window), config);
     if (!target && !drag.candidate) {
         refresh();
     } else if (target) {
@@ -1008,30 +1010,9 @@ export function onInteractiveStepped(window) {
     }
 }
 
-// Feeds the pointer position to the drop detection. KWin only reports a step when
-// the window moves, and a user aiming at a title bar holds still on it: a new
-// target is therefore checked again once the hold time is over.
-function updateDrop(window) {
-    var pointer = ws.cursorPos;
-    var tracked = drag.candidate;
-    var target = Drag.update(drag, { x: pointer.x, y: pointer.y }, Date.now(), dropCandidates(window), config);
-    if (drag.candidate && drag.candidate !== tracked && !drag.armed) {
-        schedule(config.dwell + 10, function () {
-            if (drag.dragging === window && !drag.armed) {
-                updateDrop(window);
-                refresh();
-            }
-        });
-    }
-    return target;
-}
-
 export function onInteractiveFinished(window) {
     if (drag.dragging !== window) {
         return;
-    }
-    if (drag.candidate && !drag.armed) {
-        updateDrop(window);   // released on the title bar before the check came round
     }
     var target = drag.armed && drag.candidate ? drag.candidate.window : null;
     Drag.reset(drag);
@@ -1058,17 +1039,12 @@ export function dropCandidates(dragged) {
         if (group && group === draggedGroup) {
             continue;
         }
-        if (group && Model.activeMember(group).window !== window) {
-            continue;   // a group is dropped onto through its visible tab
-        }
         if (!onCurrentDesktop(window)) {
             continue;
         }
         candidates.push({
             window: window,
-            geometry: group ? group.geometry : Util.geometryOf(window),
-            titleHeight: Policy.titleHeight(window, config),
-            stacking: window.stackingOrder
+            geometry: group ? group.geometry : Util.geometryOf(window)
         });
     }
     return candidates;

@@ -32,6 +32,11 @@ const missing = ["init", "shutdown", "reloadConfig", "groupActiveWithNext", "ung
 check("controller exposes the QML interface", missing, []);
 
 // --- geometry helpers
+check("overlap of identical rects", Util.overlapRatio(rect(0, 0, 100, 100), rect(0, 0, 100, 100)), 1);
+check("overlap of half covered rect", Util.overlapRatio(rect(0, 0, 100, 100), rect(50, 0, 100, 100)), 0.5);
+check("overlap of disjoint rects", Util.overlapRatio(rect(0, 0, 100, 100), rect(200, 0, 100, 100)), 0);
+check("overlap is relative to the dragged window",
+    Util.overlapRatio(rect(0, 0, 100, 100), rect(-50, -50, 400, 400)), 1);
 check("title bar height", Util.titlebarHeight(windowLike(100, 100, 800, 600, 100, 132, 800, 568)), 32);
 check("no title bar for client side decorations",
     Util.titlebarHeight(windowLike(100, 100, 800, 600, 100, 100, 800, 600)), 0);
@@ -93,32 +98,28 @@ check("the strip falls back to the configured height",
 check("no strip for a single window", Policy.barVisible({ members: [plain] }), false);
 check("no strip for a collapsed group", Policy.barVisible({ members: [plain, plain], collapsed: true }), false);
 
-// --- drop detection: the pointer on a title bar
-const dragConfig = { dwell: 250 };
+// --- drop detection
+const dragConfig = { overlap: 0.6, dwell: 250 };
 const state = Drag.makeState();
-const titled = (window, geometry, stacking) => ({ window, geometry, titleHeight: 30, stacking });
-const candidates = [titled(a, rect(0, 0, 400, 300), 1)];
+const candidates = [{ window: a, geometry: rect(10, 10, 100, 100) }];
 Drag.begin(state, c, rect(0, 0, 100, 100));
-check("no target while the pointer is over the body of a window",
-    [Drag.update(state, { x: 200, y: 150 }, 1000, candidates, dragConfig), state.candidate], [null, null]);
-check("the title bar under the pointer is tracked before it is armed",
-    [Drag.update(state, { x: 200, y: 10 }, 1100, candidates, dragConfig), state.candidate.window === a],
+check("no target while the windows barely overlap",
+    Drag.update(state, rect(0, 0, 100, 100), 1000, [{ window: b, geometry: rect(400, 400, 50, 50) }], dragConfig),
+    null);
+check("the target is tracked before it is armed",
+    [Drag.update(state, rect(0, 0, 100, 100), 1100, candidates, dragConfig), state.candidate.window === a],
     [null, true]);
 check("the target arms after the hold time",
-    Drag.update(state, { x: 200, y: 10 }, 1400, candidates, dragConfig).window, a);
-check("leaving the title bar disarms it",
-    Drag.update(state, { x: 200, y: 150 }, 1500, candidates, dragConfig), null);
+    Drag.update(state, rect(0, 0, 100, 100), 1400, candidates, dragConfig).window, a);
+check("leaving the target disarms it",
+    Drag.update(state, rect(2000, 2000, 100, 100), 1500, candidates, dragConfig), null);
 check("state after leaving", [state.armed, state.candidate], [false, null]);
 Drag.begin(state, c, rect(0, 0, 100, 100));
-Drag.update(state, { x: 200, y: 10 }, 2000, candidates, dragConfig);
-check("the hold time restarts for a new drag",
-    Drag.update(state, { x: 200, y: 10 }, 2100, candidates, dragConfig), null);
+Drag.update(state, rect(0, 0, 100, 100), 2000, candidates, dragConfig);
+check("the hold time restarts for a new target",
+    Drag.update(state, rect(0, 0, 100, 100), 2100, candidates, dragConfig), null);
 check("and arms once the hold time passed",
-    Drag.update(state, { x: 200, y: 10 }, 2300, candidates, dragConfig).window, a);
-check("the title bar on top wins",
-    Drag.targetAt({ x: 200, y: 10 }, [titled(a, rect(0, 0, 400, 300), 1), titled(b, rect(100, 0, 400, 300), 2)]).window, b);
-check("a title bar hidden under another window is not a target",
-    Drag.targetAt({ x: 200, y: 10 }, [titled(a, rect(0, 0, 400, 300), 1), titled(b, rect(100, -100, 400, 300), 2)]), null);
+    Drag.update(state, rect(0, 0, 100, 100), 2300, candidates, dragConfig).window, a);
 
 
 // --- stored state: reload in the same session (matched by window identity)
