@@ -512,6 +512,9 @@ function coveredBy(rect) {
 export function onWindowClosed(window) {
     var group = Model.groupForWindow(store, window);
     unregisterWindow(window);
+    if (prompt && (prompt.target === window || prompt.dragged === window)) {
+        prompt = null;   // nothing left to ask about
+    }
     if (drag.dragging === window) {
         Drag.reset(drag);   // closed in the middle of a move: no finish signal follows
         moving = null;
@@ -543,6 +546,9 @@ export function onWindowClosed(window) {
 export function onWindowActivated() {
     if (shuttingDown || suppress) {
         return;   // a consequence of our own state changes, the caller refreshes
+    }
+    if (prompt && ws.activeWindow !== prompt.target && ws.activeWindow !== prompt.dragged) {
+        prompt = null;   // the user moved on without answering
     }
     adoptActiveWindow();
     refresh();
@@ -1102,6 +1108,10 @@ export function onMaximizedChanged(window) {
 // ------------------------------------------------------------------ mouse drags
 
 export function onInteractiveStarted(window) {
+    if (prompt) {
+        prompt = null;   // a new drag replaces an unanswered question
+        refresh();
+    }
     var group = Model.groupForWindow(store, window);
     var active = group ? Model.activeMember(group) : null;
     moving = active && active.window === window ? group : null;

@@ -551,6 +551,27 @@ open(qq);
 check("a window already in a group is not pulled into a rebuilt one",
     [qq.minimized, strip().tabs], [false, ["keeper", "pp"]]);
 
+// --- the grouping prompt never outstays its windows ------------------------------
+Controller.reloadConfig(Object.assign({}, config, { dwell: 0, promptOnDrop: true }));
+const askA = new FakeWindow("mail", rect(16000, 0, 400, 300));
+const askB = new FakeWindow("chat", rect(16500, 0, 400, 300));
+const askC = new FakeWindow("notes", rect(17000, 0, 400, 300));
+const askD = new FakeWindow("music", rect(17500, 0, 400, 300));
+open(askA, askB, askC, askD);
+focus(askB);
+dragOnto(askB, rect(16000, 0, 400, 300), false);
+check("dropping asks first", view.prompt && view.prompt.text, "Group with mail?");
+close(askA, askB);
+check("the question goes away when its window closes", view.prompt, null);
+dragOnto(askB, rect(17000, 0, 400, 300), false);
+check("a new drop asks again", view.prompt && view.prompt.text, "Group with notes?");
+focus(askD);
+check("the question goes away when the user moves on", view.prompt, null);
+dragOnto(askB, rect(17000, 0, 400, 300), false);
+askB.interactiveMoveResizeStarted.emit();
+check("a new drag replaces the question", view.prompt, null);
+askB.interactiveMoveResizeFinished.emit();
+
 const failures = results.filter((result) => !result.ok);
 for (const result of results) {
     console.log(result.line);
