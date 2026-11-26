@@ -114,10 +114,10 @@ QW.Window {
                 overlay.ctl.moveGroupBy(dx, dy);
             }
             onReleased: if (overlay.ctl) {
-                overlay.ctl.finishGroupMove();
+                overlay.ctl.finishGroupMove(false);
             }
             onCanceled: if (overlay.ctl) {
-                overlay.ctl.finishGroupMove();
+                overlay.ctl.finishGroupMove(true);
             }
         }
 

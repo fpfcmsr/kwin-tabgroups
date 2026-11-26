@@ -591,6 +591,20 @@ focus(solo);
 Controller.groupActiveWithNext();
 check("grouping with the next window skips a window without a title", strip().tabs.indexOf("org.kde.ghost"), -1);
 
+// --- a cancelled strip drag drops nothing ---------------------------------------
+const cancelA = new FakeWindow("editor", rect(21000, 0, 400, 300));
+const cancelB = new FakeWindow("files", rect(21000, 400, 400, 300));
+const cancelC = new FakeWindow("photos", rect(21600, 0, 400, 300));
+open(cancelA, cancelB, cancelC);
+Controller.groupPair(cancelA, cancelB);
+focus(cancelB);
+Controller.moveGroupBy(600, 0);
+Controller.moveGroupBy(0, 0);
+check("the strip offers to drop before the drag is cancelled", view.hint, "Release to group with photos");
+Controller.finishGroupMove(true);
+focus(cancelB);
+check("a cancelled strip drag does not drop the group", strip().tabs, ["editor", "files"]);
+
 const failures = results.filter((result) => !result.ok);
 for (const result of results) {
     console.log(result.line);

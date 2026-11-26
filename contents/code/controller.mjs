@@ -841,12 +841,14 @@ export function moveGroupBy(dx, dy) {
     refresh();
 }
 
-export function finishGroupMove() {
+// `cancelled` is a drag the system took away (e.g. a grab by another window): the
+// group stays where it is moved to, but is not dropped onto anything.
+export function finishGroupMove(cancelled) {
     if (!stripDragging) {
         return;
     }
     var window = drag.dragging;
-    var target = drag.armed && drag.candidate ? drag.candidate.window : null;
+    var target = !cancelled && drag.armed && drag.candidate ? drag.candidate.window : null;
     stripDragging = false;
     Drag.reset(drag);
     finishMove();
