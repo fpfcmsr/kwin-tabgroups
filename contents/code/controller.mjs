@@ -367,7 +367,7 @@ export function isGroupable(window) {
 export function connectWindow(window) {
     var handlers = {
         started: function () { onInteractiveStarted(window); },
-        stepped: function (geometry) { onInteractiveStepped(window, geometry); },
+        stepped: function () { onInteractiveStepped(window); },
         finished: function () { onInteractiveFinished(window); },
         geometry: function () { onFrameGeometryChanged(window); },
         minimized: function () { onMinimizedChanged(window); },
@@ -995,14 +995,13 @@ export function onInteractiveStarted(window) {
     Drag.begin(drag, window, Util.geometryOf(window));
 }
 
-export function onInteractiveStepped(window, geometry) {
+export function onInteractiveStepped(window) {
     // A resize is never a drop: only moving a window onto another one groups them.
     if (drag.dragging !== window || window.resize === true) {
         return;
     }
-    var rect = Util.rect(Math.round(geometry.x), Math.round(geometry.y),
-                         Math.round(geometry.width), Math.round(geometry.height));
-    var target = Drag.update(drag, rect, Date.now(), dropCandidates(window), config);
+    var pointer = ws.cursorPos;
+    var target = Drag.update(drag, { x: pointer.x, y: pointer.y }, Date.now(), dropCandidates(window), config);
     if (!target && !drag.candidate) {
         refresh();
     } else if (target) {
@@ -1039,12 +1038,17 @@ export function dropCandidates(dragged) {
         if (group && group === draggedGroup) {
             continue;
         }
+        if (group && Model.activeMember(group).window !== window) {
+            continue;   // a group is dropped onto through its visible tab
+        }
         if (!onCurrentDesktop(window)) {
             continue;
         }
         candidates.push({
             window: window,
-            geometry: group ? group.geometry : Util.geometryOf(window)
+            geometry: group ? group.geometry : Util.geometryOf(window),
+            titleHeight: Policy.titleHeight(window, config),
+            stacking: window.stackingOrder
         });
     }
     return candidates;

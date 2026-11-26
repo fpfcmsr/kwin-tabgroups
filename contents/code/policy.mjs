@@ -30,10 +30,16 @@ export function desiredState(member, isActive, hideMode, collapsed) {
 // the window buttons of the active tab.
 export function barRect(group, activeWindow, config) {
     var geometry = group.geometry;
-    var titleHeight = activeWindow ? Util.titlebarHeight(activeWindow) : 0;
-    var height = titleHeight > 8 ? titleHeight : config.barHeight;
+    var height = titleHeight(activeWindow, config);
     var width = Math.max(160, Math.round(geometry.width - config.rightInset));
     return Util.rect(Math.round(geometry.x), Math.round(geometry.y), width, Math.round(height));
+}
+
+// Height of the band at the top of a window that the strip covers: the title bar,
+// or the configured height for a window that draws its own (client side) title bar.
+export function titleHeight(window, config) {
+    var height = window ? Util.titlebarHeight(window) : 0;
+    return height > 8 ? height : config.barHeight;
 }
 
 // The strip belongs to a group that is on screen: a collapsed group has every tab

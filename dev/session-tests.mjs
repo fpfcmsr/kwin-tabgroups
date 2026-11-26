@@ -127,7 +127,7 @@ class FakeWindow {
     }
 }
 
-const config = { promptOnDrop: false, groupDragOnStrip: true, overlap: 0.6, dwell: 250,
+const config = { promptOnDrop: false, groupDragOnStrip: true, dwell: 250,
                  hideInactive: 1, rightInset: 150, barHeight: 30, dragOut: 48,
                  restoreAfterRestart: false, restoreWindowMinutes: 1440, matchTolerancePx: 40 };
 
@@ -139,6 +139,7 @@ const workspace = {
     windowActivated: signal(),
     windows: [],
     currentDesktop: 1,
+    cursorPos: { x: 0, y: 0 },
     focusHistory: [],
     raiseWindow(window) { workspace.activeWindow = window; },
     // Workspace::activateNextWindow(): when the focused window stops being usable,
@@ -397,8 +398,9 @@ check("the strip follows a window title that changes on its own", strip().tabs, 
 // --- resizing a window over another one never groups them ----------------------
 // No hold time, so that two steps of a drag are enough to arm a drop target.
 Controller.reloadConfig(Object.assign({}, config, { dwell: 0 }));
-const dragOnto = (window, geometry, resizing) => {
+const dragOnto = (window, geometry, pointer, resizing) => {
     window.resize = resizing;
+    workspace.cursorPos = pointer;
     window.interactiveMoveResizeStarted.emit();
     for (let step = 0; step < 2; ++step) {
         window.frameGeometry = geometry;
@@ -410,13 +412,22 @@ const dropTarget = new FakeWindow("terminal", rect(3000, 0, 400, 300));
 const dropResized = new FakeWindow("notes", rect(3500, 0, 400, 300));
 const dropMoved = new FakeWindow("music", rect(3500, 400, 400, 300));
 open(dropTarget, dropResized, dropMoved);
-dragOnto(dropResized, rect(3000, 0, 400, 300), true);
+dragOnto(dropResized, rect(3000, 0, 400, 300), { x: 3200, y: 10 }, true);
 focus(dropResized);
 check("resizing a window over another one does not group them", strip().visible, false);
 dropResized.frameGeometry = rect(3500, 0, 400, 300);
-dragOnto(dropMoved, rect(3000, 0, 400, 300), false);
+dragOnto(dropMoved, rect(3000, 0, 400, 300), { x: 3200, y: 10 }, false);
 focus(dropMoved);
 check("moving a window onto another one groups them", strip(), { visible: true, tabs: ["terminal", "music"] });
+
+// --- only the title bar is a drop target ----------------------------------------
+// Moving a window across the body of another one must not group them.
+const bodyTarget = new FakeWindow("mail", rect(4000, 0, 400, 300));
+const bodyMoved = new FakeWindow("chat", rect(4500, 0, 400, 300));
+open(bodyTarget, bodyMoved);
+dragOnto(bodyMoved, rect(4000, 0, 400, 300), { x: 4200, y: 150 }, false);
+focus(bodyMoved);
+check("dropping onto the body of a window does not group them", strip().visible, false);
 
 const failures = results.filter((result) => !result.ok);
 for (const result of results) {
