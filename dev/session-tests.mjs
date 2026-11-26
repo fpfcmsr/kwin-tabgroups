@@ -478,6 +478,17 @@ check("a popup that moves over the strip hides it", strip().visible, false);
 close(farNote, shownBefore);
 check("and the strip is back once it is gone", strip().visible, true);
 
+// --- a window without a title is never a drop target ---------------------------
+// Invisible helper windows are often as large as the screen and have no title, so
+// they would cover any dragged window completely and win every drop.
+const helper = new FakeWindow("helper", rect(9000, 0, 2000, 2000));
+helper.caption = "";
+const loner = new FakeWindow("music", rect(9100, 1500, 400, 300));
+open(helper, loner);
+dragOnto(loner, rect(9100, 100, 400, 300), false);
+focus(loner);
+check("dropping onto a window without a title does not group them", strip().visible, false);
+
 const failures = results.filter((result) => !result.ok);
 for (const result of results) {
     console.log(result.line);

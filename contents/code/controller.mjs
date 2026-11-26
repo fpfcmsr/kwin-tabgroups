@@ -1150,6 +1150,11 @@ export function dropCandidates(dragged) {
         if (window === dragged || window.minimized || window.deleted) {
             continue;
         }
+        if (!String(window.caption || "").trim()) {
+            // Invisible helper windows (often as large as the screen) have no title;
+            // a window the user can see and aim at always has one.
+            continue;
+        }
         var group = Model.groupForWindow(store, window);
         if (group && group === draggedGroup) {
             continue;
