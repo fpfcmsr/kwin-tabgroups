@@ -500,7 +500,7 @@ check("a tab without a title shows its application", strip().tabs, ["org.kde.edi
 
 // --- an unloaded script lets go of the session ----------------------------------
 // KWin keeps the module alive after an unload. A copy that still listens keeps
-// grouping windows, without a strip to show it. This has to be the last check.
+// grouping windows, without a strip to show it.
 Controller.shutdown();
 const afterA = new FakeWindow("editor", rect(13000, 0, 400, 300));
 const afterB = new FakeWindow("files", rect(13500, 0, 400, 300));
@@ -509,6 +509,15 @@ dragOnto(afterB, rect(13000, 0, 400, 300), false);
 check("an unloaded script does not group windows any more",
     [state(afterA).minimized, state(afterB).minimized, state(afterA).skipSwitcher, state(afterB).skipSwitcher],
     [false, false, false, false]);
+
+// --- turning the script off and on again ----------------------------------------
+// KWin can hand the module of the previous run to the next one.
+Controller.init({ ui: { setView: (next) => { view = next; } }, workspace: workspace,
+                  config: Object.assign({}, config, { dwell: 0 }), settings: null, schedule: schedule,
+                  overlayCaption: "tabgroups-test-strip" });
+Controller.groupPair(afterA, afterB);
+focus(afterB);
+check("the script works again after it was turned off and on", strip(), { visible: true, tabs: ["editor", "files"] });
 
 const failures = results.filter((result) => !result.ok);
 for (const result of results) {

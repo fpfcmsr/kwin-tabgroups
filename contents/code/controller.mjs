@@ -55,6 +55,10 @@ function allWindows() {
 }
 
 export function init(api) {
+    // KWin can hand the module of a previous run to the next one (the script was
+    // turned off and on again), so it starts from scratch.
+    shuttingDown = false;
+    saveScheduled = false;
     ui = api.ui;
     ws = api.workspace;
     config = api.config;
