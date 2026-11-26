@@ -19,6 +19,18 @@ QW.Window {
 
     signal shown()
 
+    // The strip follows the colour scheme and font of the session.
+    SystemPalette {
+        id: colors
+
+        colorGroup: SystemPalette.Active
+    }
+
+    // `color` with its opacity replaced by `alpha`.
+    function tint(color, alpha) {
+        return Qt.rgba(color.r, color.g, color.b, alpha);
+    }
+
     title: "tabgroups-overlay"
     flags: Qt.FramelessWindowHint | Qt.WindowDoesNotAcceptFocus
     color: "transparent"
@@ -67,9 +79,9 @@ QW.Window {
         anchors.left: parent.left
         anchors.right: parent.right
         height: overlay.view.geometry ? overlay.view.geometry.height : 30
-        color: Qt.rgba(0.09, 0.10, 0.11, 0.94)
+        color: overlay.tint(colors.window, 0.94)
         border.width: 1
-        border.color: Qt.rgba(1, 1, 1, 0.14)
+        border.color: overlay.tint(colors.windowText, 0.14)
         radius: 5
         clip: true
 
@@ -136,10 +148,10 @@ QW.Window {
                     anchors.verticalCenter: parent.verticalCenter
                     radius: 4
                     color: tabItem.modelData.active
-                           ? Qt.rgba(0.24, 0.68, 0.91, 0.92)
+                           ? colors.highlight
                            : (tabItem.modelData.attention
                               ? Qt.rgba(0.93, 0.55, 0.11, 0.85)
-                              : (tabMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"))
+                              : (tabMouse.containsMouse ? overlay.tint(colors.windowText, 0.12) : "transparent"))
 
                     Text {
                         id: tabLabel
@@ -150,9 +162,8 @@ QW.Window {
                         anchors.rightMargin: 8
                         anchors.verticalCenter: parent.verticalCenter
                         text: tabItem.modelData.title
-                        color: "white"
+                        color: tabItem.modelData.active ? colors.highlightedText : colors.windowText
                         elide: Text.ElideRight
-                        font.pixelSize: 12
                     }
 
                     MouseArea {
@@ -211,13 +222,12 @@ QW.Window {
             height: 20
             radius: 4
             visible: overlay.view.tabs.length > 1
-            color: ungroupMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.16) : "transparent"
+            color: ungroupMouse.containsMouse ? overlay.tint(colors.windowText, 0.16) : "transparent"
 
             Text {
                 anchors.centerIn: parent
                 text: "×"
-                color: "white"
-                font.pixelSize: 14
+                color: colors.windowText
             }
 
             MouseArea {
@@ -238,7 +248,7 @@ QW.Window {
             anchors.fill: parent
             z: 10
             radius: 5
-            color: Qt.rgba(0.07, 0.08, 0.09, 0.97)
+            color: overlay.tint(colors.window, 0.97)
             visible: overlay.view.hint !== "" || overlay.view.prompt !== null
 
             Row {
@@ -247,8 +257,7 @@ QW.Window {
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    color: "white"
-                    font.pixelSize: 12
+                    color: colors.windowText
                     text: overlay.view.prompt ? overlay.view.prompt.text : overlay.view.hint
                 }
 
@@ -257,13 +266,12 @@ QW.Window {
                     width: 62
                     height: 20
                     radius: 4
-                    color: Qt.rgba(0.24, 0.68, 0.91, 1.0)
+                    color: colors.highlight
                     visible: overlay.view.prompt !== null
 
                     Text {
                         anchors.centerIn: parent
-                        color: "white"
-                        font.pixelSize: 11
+                        color: colors.highlightedText
                         text: overlay.view.prompt ? overlay.view.prompt.accept : ""
                     }
 
@@ -280,13 +288,12 @@ QW.Window {
                     width: 62
                     height: 20
                     radius: 4
-                    color: Qt.rgba(1, 1, 1, 0.16)
+                    color: overlay.tint(colors.windowText, 0.16)
                     visible: overlay.view.prompt !== null
 
                     Text {
                         anchors.centerIn: parent
-                        color: "white"
-                        font.pixelSize: 11
+                        color: colors.windowText
                         text: overlay.view.prompt ? overlay.view.prompt.cancel : ""
                     }
 
@@ -312,9 +319,9 @@ QW.Window {
         width: 150
         height: overlay.menuHeight - 8
         radius: 5
-        color: Qt.rgba(0.11, 0.12, 0.13, 0.97)
+        color: overlay.tint(colors.window, 0.97)
         border.width: 1
-        border.color: Qt.rgba(1, 1, 1, 0.14)
+        border.color: overlay.tint(colors.windowText, 0.14)
         visible: overlay.menuIndex >= 0
 
         Column {
@@ -326,14 +333,13 @@ QW.Window {
                 width: parent.width
                 height: 24
                 radius: 3
-                color: detachMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : "transparent"
+                color: detachMouse.containsMouse ? overlay.tint(colors.windowText, 0.14) : "transparent"
 
                 Text {
                     anchors.left: parent.left
                     anchors.leftMargin: 8
                     anchors.verticalCenter: parent.verticalCenter
-                    color: "white"
-                    font.pixelSize: 12
+                    color: colors.windowText
                     text: "Detach this tab"
                 }
 
@@ -353,14 +359,13 @@ QW.Window {
                 width: parent.width
                 height: 24
                 radius: 3
-                color: ungroupAllMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : "transparent"
+                color: ungroupAllMouse.containsMouse ? overlay.tint(colors.windowText, 0.14) : "transparent"
 
                 Text {
                     anchors.left: parent.left
                     anchors.leftMargin: 8
                     anchors.verticalCenter: parent.verticalCenter
-                    color: "white"
-                    font.pixelSize: 12
+                    color: colors.windowText
                     text: "Ungroup all"
                 }
 
