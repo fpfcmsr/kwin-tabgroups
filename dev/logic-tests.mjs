@@ -90,10 +90,10 @@ check("hidden tabs stay in the task bar", Policy.desiredState(plain, false, Poli
 const config = { barHeight: 30, rightInset: 150 };
 const barGroup = { geometry: rect(200, 300, 1000, 700), members: [plain], activeIndex: 0 };
 check("the strip sits on the title bar",
-    Policy.barRect(barGroup, windowLike(200, 300, 1000, 700, 200, 332, 1000, 668), config),
+    Policy.barRect(barGroup.geometry, windowLike(200, 300, 1000, 700, 200, 332, 1000, 668), config),
     { x: 200, y: 300, width: 850, height: 32 });
 check("the strip falls back to the configured height",
-    Policy.barRect(barGroup, windowLike(200, 300, 1000, 700, 200, 300, 1000, 700), config),
+    Policy.barRect(barGroup.geometry, windowLike(200, 300, 1000, 700, 200, 300, 1000, 700), config),
     { x: 200, y: 300, width: 850, height: 30 });
 check("no strip for a single window", Policy.barVisible({ members: [plain] }), false);
 check("no strip for a collapsed group", Policy.barVisible({ members: [plain, plain], collapsed: true }), false);

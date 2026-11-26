@@ -1226,62 +1226,35 @@ export function setView(view) {
 }
 
 export function refresh() {
-    if (shuttingDown) {
-        return;
-    }
-    if (!ui) {
+    if (shuttingDown || !ui) {
         return;
     }
     var view = { visible: false, geometry: null, tabs: [], hint: "", prompt: null,
                  dragOut: config.dragOut };
+    var strip = null;
 
     if (prompt) {
-        var targetGroup = Model.groupForWindow(store, prompt.target);
-        if (targetGroup) {
-            var activeMember = Model.activeMember(targetGroup);
-            view.geometry = Policy.barRect(targetGroup, activeMember ? activeMember.window : null, config);
-            view.tabs = tabsFor(targetGroup);
-        } else {
-            view.geometry = Policy.barRect({ geometry: Util.geometryOf(prompt.target), members: [] },
-                                           prompt.target, config);
-        }
+        strip = stripFor(prompt.target);
         view.prompt = {
             text: "Group with " + Util.elide(nameOf(prompt.target), 24) + "?",
             accept: "Group",
             cancel: "Cancel"
         };
-        view.visible = true;
     } else if (drag.armed && drag.candidate) {
-        var candidateGroup = Model.groupForWindow(store, drag.candidate.window);
-        if (stripDragging && moving) {
-            // The strip is under the pointer: it stays with the dragged group and
-            // shows the hint there, instead of jumping onto the target.
-            var dragged = Model.activeMember(moving);
-            view.geometry = Policy.barRect(moving, dragged ? dragged.window : null, config);
-            view.tabs = tabsFor(moving);
-        } else if (candidateGroup) {
-            var member = Model.activeMember(candidateGroup);
-            view.geometry = Policy.barRect(candidateGroup, member ? member.window : null, config);
-            view.tabs = tabsFor(candidateGroup);
-        } else {
-            view.geometry = Policy.barRect({ geometry: drag.candidate.geometry, members: [] },
-                                           drag.candidate.window, config);
-        }
+        // A strip that is being dragged is under the pointer: it stays with its
+        // group and shows the hint there, instead of jumping onto the target.
+        strip = stripFor(stripDragging && moving ? Model.activeMember(moving).window : drag.candidate.window);
         view.hint = "Release to group with " + Util.elide(nameOf(drag.candidate.window), 24);
-        view.visible = true;
     } else {
         var group = activeGroup();
-        if (Policy.barVisible(group)) {
-            var active = Model.activeMember(group);
-            if (active && !active.window.fullScreen) {
-                view.geometry = Policy.barRect(group, active.window, config);
-                view.tabs = tabsFor(group);
-                view.visible = true;
-            }
+        if (Policy.barVisible(group) && !Model.activeMember(group).window.fullScreen) {
+            strip = stripFor(ws.activeWindow);
         }
     }
-    if (view.visible && view.geometry && coveredBy(view.geometry)) {
-        view.visible = false;   // a menu or popup is open over the strip
+    if (strip && !coveredBy(strip.geometry)) {   // a menu or popup over the strip hides it
+        view.visible = true;
+        view.geometry = strip.geometry;
+        view.tabs = strip.tabs;
     }
     setView(view);
     if (view.visible && view.geometry) {
@@ -1290,6 +1263,17 @@ export function refresh() {
     if (!drag.dragging && !moving) {
         schedulePersist();   // a drag is saved once, when it ends
     }
+}
+
+// Where the strip goes for `window` and what it lists: the title bar and tabs of
+// its group, or the window's own title bar when it is not in a group.
+function stripFor(window) {
+    var group = Model.groupForWindow(store, window);
+    if (!group) {
+        return { geometry: Policy.barRect(Util.geometryOf(window), window, config), tabs: [] };
+    }
+    var shown = Model.activeMember(group).window;
+    return { geometry: Policy.barRect(group.geometry, shown, config), tabs: tabsFor(group) };
 }
 
 // The name shown for a window: its title, or its application when it has none.

@@ -26,11 +26,10 @@ export function desiredState(member, isActive, hideMode, collapsed) {
     };
 }
 
-// The tab strip sits on the title bar of the group, leaving room on the right for
-// the window buttons of the active tab.
-export function barRect(group, activeWindow, config) {
-    var geometry = group.geometry;
-    var titleHeight = activeWindow ? Util.titlebarHeight(activeWindow) : 0;
+// The tab strip sits on the title bar at `geometry`, leaving room on the right for
+// the window buttons of `window`, the window whose title bar it covers.
+export function barRect(geometry, window, config) {
+    var titleHeight = Util.titlebarHeight(window);
     var height = titleHeight > 8 ? titleHeight : config.barHeight;
     var width = Math.max(160, Math.round(geometry.width - config.rightInset));
     return Util.rect(Math.round(geometry.x), Math.round(geometry.y), width, Math.round(height));
