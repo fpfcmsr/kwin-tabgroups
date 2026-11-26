@@ -439,6 +439,22 @@ check("ungrouping sends each window back to where it was before it was grouped",
     [Util.geometryOf(mergeA), Util.geometryOf(mergeB), Util.geometryOf(mergeC)],
     [rect(7000, 0, 400, 300), rect(7000, 400, 400, 300), rect(7500, 0, 500, 350)]);
 
+// --- dragging a group by its tab strip onto a window -----------------------------
+const stripA = new FakeWindow("editor", rect(8000, 0, 400, 300));
+const stripB = new FakeWindow("files", rect(8000, 400, 400, 300));
+const stripC = new FakeWindow("photos", rect(8600, 0, 400, 300));
+open(stripA, stripB, stripC);
+Controller.groupPair(stripA, stripB);
+focus(stripB);
+Controller.moveGroupBy(600, 0);   // over the window: the target is tracked
+Controller.moveGroupBy(0, 0);     // and armed on the next step (no hold time here)
+check("the strip offers to drop the group", view.hint, "Release to group with photos");
+check("the strip stays with the dragged group while it offers", view.geometry.x, 8600);
+Controller.finishGroupMove();
+focus(stripB);
+check("releasing the strip over a window makes one larger group", strip(),
+    { visible: true, tabs: ["photos", "editor", "files"] });
+
 const failures = results.filter((result) => !result.ok);
 for (const result of results) {
     console.log(result.line);

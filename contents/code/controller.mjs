@@ -16,6 +16,7 @@ var registry = [];        // windows that may become tabs
 var hooks = [];           // { window, handlers }
 var drag = Drag.makeState();
 var moving = null;        // group whose visible tab is being moved or resized
+var stripDragging = false; // the group in `moving` is dragged by its tab strip
 var prompt = null;       // { target, dragged } while the user is asked
 var suppress = false;     // true while the script itself changes window state
 var scheduler = null;     // function (delay, callback), provided by the QML side
@@ -444,6 +445,7 @@ export function onWindowClosed(window) {
     if (drag.dragging === window) {
         Drag.reset(drag);   // closed in the middle of a move: no finish signal follows
         moving = null;
+        stripDragging = false;
     }
     if (!group) {
         refresh();
@@ -756,21 +758,37 @@ export function reorderTab(from, to) {
 }
 
 // Dragging the strip moves the visible tab only; the hidden tabs follow once the
-// strip is released (finishGroupMove).
+// strip is released (finishGroupMove). Like a window drag, it can drop the group
+// onto another window.
 export function moveGroupBy(dx, dy) {
     var group = activeGroup();
     var active = group ? Model.activeMember(group) : null;
     if (!active || !config.groupDragOnStrip) {
         return;
     }
+    if (!stripDragging) {
+        stripDragging = true;
+        Drag.begin(drag, active.window, group.geometry);
+    }
     moving = group;
     group.geometry = Util.translated(group.geometry, dx, dy);
     setGeometry(active.window, group.geometry);
+    Drag.update(drag, group.geometry, Date.now(), dropCandidates(active.window), config);
     refresh();
 }
 
 export function finishGroupMove() {
+    if (!stripDragging) {
+        return;
+    }
+    var window = drag.dragging;
+    var target = drag.armed && drag.candidate ? drag.candidate.window : null;
+    stripDragging = false;
+    Drag.reset(drag);
     finishMove();
+    if (target) {
+        dropOrAsk(target, window);
+    }
     refresh();
 }
 
@@ -1060,13 +1078,17 @@ export function onInteractiveFinished(window) {
     Drag.reset(drag);
     finishMove();
     if (target) {
-        if (config.promptOnDrop) {
-            prompt = { target: target, dragged: window };
-        } else {
-            dropOnto(target, window);
-        }
+        dropOrAsk(target, window);
     }
     refresh();
+}
+
+function dropOrAsk(target, dragged) {
+    if (config.promptOnDrop) {
+        prompt = { target: target, dragged: dragged };
+    } else {
+        dropOnto(target, dragged);
+    }
 }
 
 export function dropCandidates(dragged) {
@@ -1199,7 +1221,13 @@ export function refresh() {
         view.visible = true;
     } else if (drag.armed && drag.candidate) {
         var candidateGroup = Model.groupForWindow(store, drag.candidate.window);
-        if (candidateGroup) {
+        if (stripDragging && moving) {
+            // The strip is under the pointer: it stays with the dragged group and
+            // shows the hint there, instead of jumping onto the target.
+            var dragged = Model.activeMember(moving);
+            view.geometry = Policy.barRect(moving, dragged ? dragged.window : null, config);
+            view.tabs = tabsFor(moving);
+        } else if (candidateGroup) {
             var member = Model.activeMember(candidateGroup);
             view.geometry = Policy.barRect(candidateGroup, member ? member.window : null, config);
             view.tabs = tabsFor(candidateGroup);
