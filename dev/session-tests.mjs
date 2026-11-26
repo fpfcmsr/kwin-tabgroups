@@ -572,6 +572,16 @@ askB.interactiveMoveResizeStarted.emit();
 check("a new drag replaces the question", view.prompt, null);
 askB.interactiveMoveResizeFinished.emit();
 
+// --- a changed setting reaches every group --------------------------------------
+const modeA = new FakeWindow("editor", rect(18000, 0, 400, 300));
+const modeB = new FakeWindow("files", rect(18500, 0, 400, 300));
+open(modeA, modeB);
+Controller.groupPair(modeA, modeB);
+focus(pp);   // another group has the focus
+Controller.reloadConfig(Object.assign({}, config, { dwell: 0, hideInactive: 0 }));
+check("switching to cover mode uncovers the tabs of every group", modeA.minimized, false);
+Controller.reloadConfig(Object.assign({}, config, { dwell: 0 }));
+
 const failures = results.filter((result) => !result.ok);
 for (const result of results) {
     console.log(result.line);

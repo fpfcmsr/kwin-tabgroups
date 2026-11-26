@@ -93,7 +93,9 @@ export function reloadConfig(next) {
     if (config.restoreAfterRestart && !pendingRestore) {
         startPendingRestore();
     }
-    applyActiveGroup();
+    for (var i = 0; i < store.groups.length; ++i) {
+        applyGroup(store.groups[i]);   // e.g. inactive tabs are now covered, not minimized
+    }
     refresh();
 }
 
@@ -878,13 +880,6 @@ export function activate(group, window) {
 }
 
 // ------------------------------------------------------------------ application
-
-export function applyActiveGroup() {
-    var group = activeGroup();
-    if (group) {
-        applyGroup(group);
-    }
-}
 
 // Makes the windows match the model: the visible tab first, so that hiding the
 // others cannot take the focus away from it, then everyone else.
