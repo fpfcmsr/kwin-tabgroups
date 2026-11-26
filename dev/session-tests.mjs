@@ -343,6 +343,31 @@ backA.minimized = false;
 advance(100);
 check("a tab restored behind the group is hidden again", backA.minimized, true);
 
+// --- dragging a group moves the hidden tabs once, when the drag ends -----------
+// Resizing every hidden tab on each step of a drag floods their clients with
+// configure requests, so only the visible tab and the strip follow the pointer.
+const slideA = new FakeWindow("editor", rect(100, 100, 800, 600));
+const slideB = new FakeWindow("files", rect(300, 250, 500, 400));
+open(slideA, slideB);
+Controller.groupPair(slideA, slideB);
+focus(slideB);
+slideB.interactiveMoveResizeStarted.emit();
+for (const x of [120, 140, 160]) {
+    slideB.frameGeometry = rect(x, 100, 800, 600);
+    slideB.interactiveMoveResizeStepped.emit(rect(x, 100, 800, 600));
+}
+check("the hidden tab stays put while the group is dragged", Util.geometryOf(slideA), rect(100, 100, 800, 600));
+check("the strip follows the drag", view.geometry.x, 160);
+slideB.interactiveMoveResizeFinished.emit();
+check("the hidden tab catches up when the drag ends", Util.geometryOf(slideA), rect(160, 100, 800, 600));
+
+Controller.moveGroupBy(40, 0);
+check("dragging the strip moves the visible tab", Util.geometryOf(slideB), rect(200, 100, 800, 600));
+check("the hidden tab waits for the strip to be released", Util.geometryOf(slideA), rect(160, 100, 800, 600));
+Controller.finishGroupMove();
+check("releasing the strip brings the hidden tab along", Util.geometryOf(slideA), rect(200, 100, 800, 600));
+focus(backB);   // the next check looks at the group from before
+
 // --- a tab that wants attention is marked in the strip -------------------------
 backA.demandsAttention = true;
 check("the strip marks the tab that wants attention", tabStates(),

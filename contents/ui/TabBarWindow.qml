@@ -101,6 +101,12 @@ QW.Window {
                 lastY += dy;
                 overlay.ctl.moveGroupBy(dx, dy);
             }
+            onReleased: if (overlay.ctl) {
+                overlay.ctl.finishGroupMove();
+            }
+            onCanceled: if (overlay.ctl) {
+                overlay.ctl.finishGroupMove();
+            }
         }
 
         Row {

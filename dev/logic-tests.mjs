@@ -27,7 +27,7 @@ const windowLike = (fx, fy, fw, fh, cx, cy, cw, ch) => ({
 
 // --- the interface the QML entry point relies on
 const missing = ["init", "shutdown", "reloadConfig", "groupActiveWithNext", "ungroupActive", "nextTab",
-                 "switchTo", "detachTab", "reorderTab", "moveGroupBy", "acceptPrompt", "cancelPrompt",
+                 "switchTo", "detachTab", "reorderTab", "moveGroupBy", "finishGroupMove", "acceptPrompt", "cancelPrompt",
                  "overlayShown", "setView"].filter((name) => typeof Controller[name] !== "function");
 check("controller exposes the QML interface", missing, []);
 

@@ -15,7 +15,8 @@ var store = Model.createStore();
 var registry = [];        // windows that may become tabs
 var hooks = [];           // { window, handlers }
 var drag = Drag.makeState();
-var prompt = null;        // { target, dragged } while the user is asked
+var moving = null;        // group whose visible tab is being moved or resized
+var prompt = null;       // { target, dragged } while the user is asked
 var suppress = false;     // true while the script itself changes window state
 var scheduler = null;     // function (delay, callback), provided by the QML side
 var shuttingDown = false;
@@ -440,6 +441,10 @@ export function onWindowRemoved(window) {
 export function onWindowClosed(window) {
     var group = Model.groupForWindow(store, window);
     unregisterWindow(window);
+    if (drag.dragging === window) {
+        Drag.reset(drag);   // closed in the middle of a move: no finish signal follows
+        moving = null;
+    }
     if (!group) {
         refresh();
         return;
@@ -645,6 +650,9 @@ export function dissolveGroup(group, restoreGeometry) {
     for (var i = 0; i < members.length; ++i) {
         restoreMember(members[i], restoreGeometry);
     }
+    if (moving === group) {
+        moving = null;
+    }
     Model.dissolve(store, group);
 }
 
@@ -705,14 +713,32 @@ export function reorderTab(from, to) {
     }
 }
 
+// Dragging the strip moves the visible tab only; the hidden tabs follow once the
+// strip is released (finishGroupMove).
 export function moveGroupBy(dx, dy) {
     var group = activeGroup();
-    if (!group || !config.groupDragOnStrip) {
+    var active = group ? Model.activeMember(group) : null;
+    if (!active || !config.groupDragOnStrip) {
         return;
     }
+    moving = group;
     group.geometry = Util.translated(group.geometry, dx, dy);
-    applyGroup(group);
+    setGeometry(active.window, group.geometry);
     refresh();
+}
+
+export function finishGroupMove() {
+    finishMove();
+    refresh();
+}
+
+// The move or resize of a group is over: bring the hidden tabs to its geometry.
+function finishMove() {
+    var group = moving;
+    moving = null;
+    if (group && store.groups.indexOf(group) >= 0) {
+        applyGroup(group);
+    }
 }
 
 // Makes `window` the visible tab of its group. The tab that is brought forward
@@ -878,6 +904,12 @@ export function onFrameGeometryChanged(window) {
         return;
     }
     group.geometry = geometry;
+    if (group === moving) {
+        // Resizing every hidden tab on each step of a drag floods their clients
+        // with configure requests; they catch up when the drag ends.
+        refresh();
+        return;
+    }
     applyGroup(group);
     refresh();
 }
@@ -957,6 +989,9 @@ export function onMaximizedChanged(window) {
 // ------------------------------------------------------------------ mouse drags
 
 export function onInteractiveStarted(window) {
+    var group = Model.groupForWindow(store, window);
+    var active = group ? Model.activeMember(group) : null;
+    moving = active && active.window === window ? group : null;
     Drag.begin(drag, window, Util.geometryOf(window));
 }
 
@@ -980,6 +1015,7 @@ export function onInteractiveFinished(window) {
     }
     var target = drag.armed && drag.candidate ? drag.candidate.window : null;
     Drag.reset(drag);
+    finishMove();
     if (target) {
         if (config.promptOnDrop) {
             prompt = { target: target, dragged: window };
@@ -1145,7 +1181,9 @@ export function refresh() {
     if (view.visible && view.geometry) {
         positionOverlay(view.geometry);
     }
-    schedulePersist();
+    if (!drag.dragging && !moving) {
+        schedulePersist();   // a drag is saved once, when it ends
+    }
 }
 
 export function tabsFor(group) {

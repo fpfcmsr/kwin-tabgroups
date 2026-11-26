@@ -18,6 +18,7 @@ Item {
         detachTab: function (index) { Controller.detachTab(index); },
         reorderTab: function (from, to) { Controller.reorderTab(from, to); },
         moveGroupBy: function (dx, dy) { Controller.moveGroupBy(dx, dy); },
+        finishGroupMove: function () { Controller.finishGroupMove(); },
         ungroupAll: function () { Controller.ungroupActive(); },
         acceptPrompt: function () { Controller.acceptPrompt(); },
         cancelPrompt: function () { Controller.cancelPrompt(); }
